@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Step 3: Preview & Test - RAG Chatbot Platform{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <div class="container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div class="step-label">Basic Settings</div>
+            </div>
+            <div class="step-line completed"></div>
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div class="step-label">Data Upload</div>
+            </div>
+            <div class="step-line completed"></div>
+            <div class="step active">
+                <div class="step-number">3</div>
+                <div class="step-label">Preview & Test</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-label">Deploy</div>
+            </div>
+        </div>
+
+        <!-- Form Content -->
+        <div class="wizard-content">
+            <h1>Preview & Test</h1>
+            <p class="wizard-description">Test your chatbot before deploying</p>
+
+            <div class="chatbot-info">
+                <p><strong>Chatbot:</strong> <span id="chatbot-name-display"></span></p>
+                <p><strong>Documents:</strong> <span id="document-count"></span> uploaded</p>
+            </div>
+
+            <div class="test-chat-container">
+                <div class="chat-messages" id="test-chat-messages">
+                    <div class="system-message">
+                        <p>👋 Your chatbot is ready for testing! Ask a question based on your uploaded documents.</p>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <form id="test-query-form">
+                        <input 
+                            type="text" 
+                            id="test-query-input" 
+                            placeholder="Type your test question here..."
+                            autocomplete="off"
+                        >
+                        <button type="submit" class="btn-send" id="send-btn">
+                            <span>Send</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="back-btn">Back</button>
+                <button type="button" class="btn-primary" id="deploy-btn">Next: Deploy</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/wizard.js') }}"></script>
+{% endblock %}

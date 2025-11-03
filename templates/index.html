@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Home - RAG Chatbot Platform{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <h1>Create Custom AI Chatbots</h1>
+        <p class="hero-subtitle">Train chatbots on your own documents in just 4 simple steps</p>
+        <a href="/create" class="btn-large btn-primary">Get Started</a>
+    </div>
+</div>
+
+<div class="features">
+    <div class="container">
+        <h2>How It Works</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-number">1</div>
+                <h3>Basic Settings</h3>
+                <p>Configure your chatbot name and system prompt</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">2</div>
+                <h3>Data Upload</h3>
+                <p>Upload your documents (PDF, TXT, DOCX)</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">3</div>
+                <h3>Preview & Test</h3>
+                <p>Test your chatbot before going live</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-number">4</div>
+                <h3>Deploy</h3>
+                <p>Make your chatbot live and start using it</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cta-section">
+    <div class="container">
+        <h2>Ready to create your chatbot?</h2>
+        <a href="/create" class="btn-large btn-primary">Create Your Chatbot Now</a>
+    </div>
+</div>
+{% endblock %}

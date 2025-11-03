@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Step 1: Basic Settings - RAG Chatbot Platform{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <div class="container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active">
+                <div class="step-number">1</div>
+                <div class="step-label">Basic Settings</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-label">Data Upload</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-label">Preview & Test</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-label">Deploy</div>
+            </div>
+        </div>
+
+        <!-- Form Content -->
+        <div class="wizard-content">
+            <h1>Basic Settings</h1>
+            <p class="wizard-description">Configure your chatbot's name and behavior</p>
+
+            <form id="step1-form" class="wizard-form">
+                <div class="form-group">
+                    <label for="chatbot-name">Chatbot Name <span class="required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="chatbot-name" 
+                        name="name" 
+                        placeholder="e.g., Customer Support Bot"
+                        required
+                        maxlength="100"
+                    >
+                    <span class="error-message" id="name-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="system-prompt">System Prompt <span class="required">*</span></label>
+                    <textarea 
+                        id="system-prompt" 
+                        name="system_prompt" 
+                        rows="6"
+                        placeholder="e.g., You are a helpful customer support assistant. Answer questions based on the provided documentation. Be concise and professional."
+                        required
+                        maxlength="1000"
+                    ></textarea>
+                    <span class="help-text">Define how your chatbot should behave and respond to users</span>
+                    <span class="error-message" id="prompt-error"></span>
+                </div>
+
+                <div class="form-actions">
+                    <a href="/" class="btn-secondary">Cancel</a>
+                    <button type="submit" class="btn-primary">Next: Data Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/wizard.js') }}"></script>
+{% endblock %}
