@@ -32,39 +32,38 @@ def index():
 @web_bp.route('/create')
 def create_chatbot():
     """
-    Chatbot creation wizard - Step 1 (Basic Settings).
+    Chatbot creation wizard - Step 1 (Data).
 
     Displays the first step of the chatbot creation wizard where users
-    configure the chatbot name and system prompt.
+    configure the chatbot name, system prompt, and upload documents.
 
     Returns:
         Rendered create_step1.html template
     """
-    logger.info("Rendering chatbot creation wizard - Step 1")
+    logger.info("Rendering chatbot creation wizard - Step 1 (Data)")
     return render_template('create_step1.html')
 
 
 @web_bp.route('/create/step/<int:step_number>')
 def create_step(step_number):
     """
-    Chatbot creation wizard - Steps 2-4.
+    Chatbot creation wizard - Steps 2-3.
 
     Displays the specified step of the chatbot creation wizard.
 
     URL Parameters:
-        - step_number: Step number (2, 3, or 4)
+        - step_number: Step number (2 or 3)
 
     Returns:
         Rendered template for the specified step
         or 404 if step number is invalid
 
     Steps:
-        - Step 2: Data Upload
-        - Step 3: Preview & Test
-        - Step 4: Deploy
+        - Step 2: Playground (Model selection, system prompt editing, testing)
+        - Step 3: Deploy (Success page with chatbot URL)
     """
     # Validate step number
-    if step_number < 2 or step_number > 4:
+    if step_number < 2 or step_number > 3:
         logger.warning("Invalid step number requested: %d", step_number)
         abort(404)
 

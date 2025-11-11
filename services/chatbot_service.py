@@ -33,19 +33,21 @@ class ChatbotService:
         self.vector_store_manager = vector_store_manager or VectorStoreManager()
         logger.info("ChatbotService initialized")
 
-    def create_chatbot(self, name: str, system_prompt: str) -> Dict[str, Any]:
+    def create_chatbot(self, name: str, system_prompt: str, model: str = 'gemini-2.5-flash') -> Dict[str, Any]:
         """
         Create a new chatbot with validation.
 
         Args:
             name: Name of the chatbot (required, non-empty)
             system_prompt: System prompt for the chatbot (required, non-empty)
+            model: LLM model to use (default: 'gemini-2.5-flash')
 
         Returns:
             Dictionary containing chatbot metadata:
                 - id: Unique chatbot identifier
                 - name: Chatbot name
                 - system_prompt: System prompt
+                - model: LLM model
                 - status: Current status ('creating')
                 - created_at: Creation timestamp
                 - updated_at: Last update timestamp
@@ -61,6 +63,9 @@ class ChatbotService:
         if not system_prompt or not isinstance(system_prompt, str) or not system_prompt.strip():
             raise ValueError("System prompt is required and cannot be empty")
 
+        if not model or not isinstance(model, str) or not model.strip():
+            raise ValueError("Model is required and cannot be empty")
+
         # Generate unique ID
         chatbot_id = str(uuid.uuid4())
 
@@ -70,13 +75,13 @@ class ChatbotService:
 
                 # Insert chatbot record
                 cursor.execute("""
-                    INSERT INTO chatbots (id, name, system_prompt, status)
-                    VALUES (?, ?, ?, ?)
-                """, (chatbot_id, name.strip(), system_prompt.strip(), 'creating'))
+                    INSERT INTO chatbots (id, name, system_prompt, model, status)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (chatbot_id, name.strip(), system_prompt.strip(), model.strip(), 'creating'))
 
                 # Retrieve the created chatbot
                 cursor.execute("""
-                    SELECT id, name, system_prompt, status, created_at, updated_at
+                    SELECT id, name, system_prompt, model, status, created_at, updated_at
                     FROM chatbots
                     WHERE id = ?
                 """, (chatbot_id,))
@@ -87,12 +92,13 @@ class ChatbotService:
                     'id': row['id'],
                     'name': row['name'],
                     'system_prompt': row['system_prompt'],
+                    'model': row['model'],
                     'status': row['status'],
                     'created_at': row['created_at'],
                     'updated_at': row['updated_at']
                 }
 
-                logger.info("Created chatbot '%s' with id '%s'", name, chatbot_id)
+                logger.info("Created chatbot '%s' with id '%s' using model '%s'", name, chatbot_id, model)
                 return chatbot
 
         except Exception as e:
@@ -111,6 +117,7 @@ class ChatbotService:
                 - id: Unique chatbot identifier
                 - name: Chatbot name
                 - system_prompt: System prompt
+                - model: LLM model
                 - status: Current status
                 - created_at: Creation timestamp
                 - updated_at: Last update timestamp
@@ -127,7 +134,7 @@ class ChatbotService:
                 cursor = conn.cursor()
 
                 cursor.execute("""
-                    SELECT id, name, system_prompt, status, created_at, updated_at
+                    SELECT id, name, system_prompt, model, status, created_at, updated_at
                     FROM chatbots
                     WHERE id = ?
                 """, (chatbot_id.strip(),))
@@ -142,6 +149,7 @@ class ChatbotService:
                     'id': row['id'],
                     'name': row['name'],
                     'system_prompt': row['system_prompt'],
+                    'model': row['model'],
                     'status': row['status'],
                     'created_at': row['created_at'],
                     'updated_at': row['updated_at']
@@ -153,6 +161,66 @@ class ChatbotService:
         except Exception as e:
             logger.error("Failed to retrieve chatbot '%s': %s", chatbot_id, str(e))
             raise Exception(f"Chatbot retrieval failed: {str(e)}") from e
+
+    def update_chatbot(self, chatbot_id: str, system_prompt: Optional[str] = None, model: Optional[str] = None) -> None:
+        """
+        Update chatbot's system prompt and/or model.
+
+        Args:
+            chatbot_id: Unique identifier of the chatbot
+            system_prompt: New system prompt (optional)
+            model: New model (optional)
+
+        Raises:
+            ValueError: If chatbot_id is empty or if both system_prompt and model are None
+            Exception: If database operation fails or chatbot not found
+        """
+        if not chatbot_id or not isinstance(chatbot_id, str) or not chatbot_id.strip():
+            raise ValueError("Chatbot ID is required and cannot be empty")
+
+        if system_prompt is None and model is None:
+            raise ValueError("At least one of system_prompt or model must be provided")
+
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                # Build dynamic update query
+                update_fields = []
+                update_values = []
+
+                if system_prompt is not None:
+                    if not isinstance(system_prompt, str) or not system_prompt.strip():
+                        raise ValueError("System prompt cannot be empty")
+                    update_fields.append("system_prompt = ?")
+                    update_values.append(system_prompt.strip())
+
+                if model is not None:
+                    if not isinstance(model, str) or not model.strip():
+                        raise ValueError("Model cannot be empty")
+                    update_fields.append("model = ?")
+                    update_values.append(model.strip())
+
+                # Add updated_at timestamp
+                update_fields.append("updated_at = CURRENT_TIMESTAMP")
+                update_values.append(chatbot_id.strip())
+
+                query = f"""
+                    UPDATE chatbots
+                    SET {', '.join(update_fields)}
+                    WHERE id = ?
+                """
+
+                cursor.execute(query, update_values)
+
+                if cursor.rowcount == 0:
+                    raise Exception(f"Chatbot with id '{chatbot_id}' not found")
+
+                logger.info("Updated chatbot '%s'", chatbot_id)
+
+        except Exception as e:
+            logger.error("Failed to update chatbot '%s': %s", chatbot_id, str(e))
+            raise Exception(f"Chatbot update failed: {str(e)}") from e
 
     def update_chatbot_status(self, chatbot_id: str, status: str) -> None:
         """
