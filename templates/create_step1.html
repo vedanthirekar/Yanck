@@ -25,8 +25,8 @@
 
         <!-- Form Content -->
         <div class="wizard-content">
-            <h1>Configure Your Chatbot</h1>
-            <p class="wizard-description">Set up your chatbot's name, system prompt, and training data</p>
+            <h1 id="page-title">Configure Your Chatbot</h1>
+            <p class="wizard-description" id="page-description">Set up your chatbot's name, system prompt, and training data</p>
 
             <form id="step1-form" class="wizard-form">
                 <!-- Chatbot Name -->
@@ -97,7 +97,7 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="/" class="btn-secondary">Cancel</a>
+                    <a href="/dashboard" class="btn-secondary" id="cancel-btn">Cancel</a>
                     <button type="submit" class="btn-primary" id="next-btn" disabled>Next: Playground</button>
                 </div>
             </form>

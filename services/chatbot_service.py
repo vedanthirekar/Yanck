@@ -162,6 +162,66 @@ class ChatbotService:
             logger.error("Failed to retrieve chatbot '%s': %s", chatbot_id, str(e))
             raise Exception(f"Chatbot retrieval failed: {str(e)}") from e
 
+    def get_all_chatbots(self) -> list[Dict[str, Any]]:
+        """
+        Retrieve all chatbots with document count.
+
+        Returns:
+            List of dictionaries containing chatbot metadata:
+                - id: Unique chatbot identifier
+                - name: Chatbot name
+                - system_prompt: System prompt
+                - model: LLM model
+                - status: Current status
+                - created_at: Creation timestamp
+                - updated_at: Last update timestamp
+                - document_count: Number of documents uploaded
+
+        Raises:
+            Exception: If database operation fails
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                cursor.execute("""
+                    SELECT
+                        c.id,
+                        c.name,
+                        c.system_prompt,
+                        c.model,
+                        c.status,
+                        c.created_at,
+                        c.updated_at,
+                        COUNT(d.id) as document_count
+                    FROM chatbots c
+                    LEFT JOIN documents d ON c.id = d.chatbot_id
+                    GROUP BY c.id
+                    ORDER BY c.created_at DESC
+                """)
+
+                rows = cursor.fetchall()
+
+                chatbots = []
+                for row in rows:
+                    chatbots.append({
+                        'id': row['id'],
+                        'name': row['name'],
+                        'system_prompt': row['system_prompt'],
+                        'model': row['model'],
+                        'status': row['status'],
+                        'created_at': row['created_at'],
+                        'updated_at': row['updated_at'],
+                        'document_count': row['document_count']
+                    })
+
+                logger.info("Retrieved %d chatbots", len(chatbots))
+                return chatbots
+
+        except Exception as e:
+            logger.error("Failed to retrieve chatbots: %s", str(e))
+            raise Exception(f"Chatbot retrieval failed: {str(e)}") from e
+
     def update_chatbot(self, chatbot_id: str, system_prompt: Optional[str] = None, model: Optional[str] = None) -> None:
         """
         Update chatbot's system prompt and/or model.

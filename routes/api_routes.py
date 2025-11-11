@@ -205,6 +205,97 @@ def upload_documents(chatbot_id):
 
 
 
+@api_bp.route('/chatbots', methods=['GET'])
+def get_all_chatbots():
+    """
+    Get all chatbots with metadata and document counts.
+
+    Returns:
+        JSON response with list of chatbots (200 OK)
+        or error message (500 Internal Server Error)
+
+    Response includes:
+        - chatbots: List of chatbot objects with metadata and document_count
+
+    Example:
+        GET /api/chatbots
+    """
+    try:
+        chatbot_service = current_app.chatbot_service
+        chatbots = chatbot_service.get_all_chatbots()
+
+        logger.info("Retrieved %d chatbots via API", len(chatbots))
+
+        return jsonify({
+            "success": True,
+            "chatbots": chatbots,
+            "count": len(chatbots)
+        }), 200
+
+    except Exception as e:
+        logger.error("Error retrieving all chatbots: %s", str(e))
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Failed to retrieve chatbots",
+                "details": str(e) if current_app.config.get('ENV') == 'development' else None
+            }
+        }), 500
+
+
+@api_bp.route('/chatbot/<chatbot_id>', methods=['GET'])
+def get_chatbot(chatbot_id):
+    """
+    Get a single chatbot's details by ID.
+
+    URL Parameters:
+        - chatbot_id: Unique identifier of the chatbot
+
+    Returns:
+        JSON response with chatbot details (200 OK)
+        or error message (404 Not Found, 500 Internal Server Error)
+
+    Example:
+        GET /api/chatbot/{chatbot_id}
+    """
+    try:
+        chatbot_service = current_app.chatbot_service
+        chatbot = chatbot_service.get_chatbot(chatbot_id)
+
+        if chatbot is None:
+            return jsonify({
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": f"Chatbot '{chatbot_id}' not found"
+                }
+            }), 404
+
+        logger.info("Retrieved chatbot '%s' via API", chatbot_id)
+
+        return jsonify({
+            "success": True,
+            "chatbot": chatbot
+        }), 200
+
+    except ValueError as e:
+        logger.warning("Validation error in get_chatbot: %s", str(e))
+        return jsonify({
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": str(e)
+            }
+        }), 400
+    except Exception as e:
+        logger.error("Error retrieving chatbot '%s': %s", chatbot_id, str(e))
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Failed to retrieve chatbot",
+                "details": str(e) if current_app.config.get('ENV') == 'development' else None
+            }
+        }), 500
+
+
 @api_bp.route('/chatbot/<chatbot_id>/status', methods=['GET'])
 def get_chatbot_status(chatbot_id):
     """

@@ -87,6 +87,58 @@ function initStep1() {
     let selectedFiles = [];
     let chatbotId = null;
     let uploadedDocuments = [];
+    let isEditMode = false;
+
+    // Check if we're in edit mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const editChatbotId = urlParams.get('edit');
+
+    if (editChatbotId) {
+        isEditMode = true;
+        chatbotId = editChatbotId;
+        saveChatbotData(chatbotId, '', ''); // Save chatbot ID temporarily
+        loadExistingChatbot(editChatbotId);
+
+        // Update UI for edit mode
+        document.getElementById('page-title').textContent = 'Edit Your Chatbot';
+        document.getElementById('page-description').textContent = 'Update your chatbot\'s configuration and training data';
+        nextBtn.textContent = 'Save & Continue';
+    }
+
+    // Load existing chatbot data
+    async function loadExistingChatbot(chatbotId) {
+        try {
+            // Fetch chatbot data
+            const chatbotResponse = await fetch(`/api/chatbot/${chatbotId}`);
+            const chatbotData = await chatbotResponse.json();
+
+            if (!chatbotResponse.ok) {
+                throw new Error(chatbotData.error?.message || 'Failed to load chatbot');
+            }
+
+            const chatbot = chatbotData.chatbot;
+
+            // Pre-populate form fields
+            document.getElementById('chatbot-name').value = chatbot.name;
+            document.getElementById('system-prompt').value = chatbot.system_prompt;
+
+            // Save chatbot data to session
+            saveChatbotData(chatbot.id, chatbot.name, chatbot.model);
+
+            // Fetch documents
+            const statusResponse = await fetch(`/api/chatbot/${chatbotId}/status`);
+            const statusData = await statusResponse.json();
+
+            if (statusResponse.ok && statusData.documents) {
+                uploadedDocuments = statusData.documents;
+                updateFileList();
+                updateNextButton();
+            }
+        } catch (error) {
+            console.error('Error loading chatbot:', error);
+            showError('name-error', 'Failed to load chatbot data. Please try again.');
+        }
+    }
 
     // Click to browse files
     fileUploadArea.addEventListener('click', () => {
@@ -161,9 +213,14 @@ function initStep1() {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item uploaded';
             fileItem.innerHTML = `
-                <span class="file-name">📄 ${doc.filename}</span>
-                <span class="file-size">${formatFileSize(doc.file_size)}</span>
-                <button type="button" class="btn-remove" data-doc-id="${doc.id}">✕</button>
+                <div class="file-info">
+                    <span class="file-icon">📄</span>
+                    <div class="file-details">
+                        <div class="file-name">${doc.filename}</div>
+                        <div class="file-size">${formatFileSize(doc.file_size)}</div>
+                    </div>
+                </div>
+                <button type="button" class="file-remove" data-doc-id="${doc.id}">✕</button>
             `;
             fileList.appendChild(fileItem);
         });
@@ -173,15 +230,20 @@ function initStep1() {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item';
             fileItem.innerHTML = `
-                <span class="file-name">📄 ${file.name}</span>
-                <span class="file-size">${formatFileSize(file.size)}</span>
-                <button type="button" class="btn-remove" data-index="${index}">✕</button>
+                <div class="file-info">
+                    <span class="file-icon">📄</span>
+                    <div class="file-details">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button type="button" class="file-remove" data-index="${index}">✕</button>
             `;
             fileList.appendChild(fileItem);
         });
 
         // Add remove button handlers
-        fileList.querySelectorAll('.btn-remove').forEach(btn => {
+        fileList.querySelectorAll('.file-remove').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const docId = e.target.dataset.docId;
                 const index = e.target.dataset.index;
@@ -267,11 +329,12 @@ function initStep1() {
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
+        submitBtn.textContent = isEditMode ? 'Saving...' : 'Processing...';
 
         try {
-            // Step 1: Create chatbot if not already created
+            // Step 1: Create or update chatbot
             if (!chatbotId) {
+                // Create new chatbot
                 const createResponse = await fetch('/api/chatbot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -293,6 +356,28 @@ function initStep1() {
 
                 chatbotId = createData.id;
                 saveChatbotData(createData.id, createData.name, createData.model);
+            } else if (isEditMode) {
+                // Update existing chatbot
+                const updateResponse = await fetch(`/api/chatbot/${chatbotId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system_prompt: systemPrompt
+                    })
+                });
+
+                const updateData = await updateResponse.json();
+
+                if (!updateResponse.ok) {
+                    const errorMessage = updateData.error?.message || 'Failed to update chatbot';
+                    showError('prompt-error', errorMessage);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    return;
+                }
+
+                // Update session storage
+                saveChatbotData(chatbotId, name, getChatbotData().chatbotModel);
             }
 
             // Step 2: Upload new files if any

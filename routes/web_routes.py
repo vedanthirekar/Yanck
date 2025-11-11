@@ -29,6 +29,21 @@ def index():
     return render_template('index.html')
 
 
+@web_bp.route('/dashboard')
+def dashboard():
+    """
+    Dashboard route.
+
+    Displays all chatbots created by users with options to view,
+    edit, or delete them.
+
+    Returns:
+        Rendered dashboard.html template
+    """
+    logger.info("Rendering dashboard page")
+    return render_template('dashboard.html')
+
+
 @web_bp.route('/create')
 def create_chatbot():
     """

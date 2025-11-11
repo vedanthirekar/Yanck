@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}My Chatbots - RAG Chatbot Platform{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container">
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <h1>My Chatbots</h1>
+                <p class="subtitle">Manage and access all your deployed chatbots</p>
+            </div>
+            <div class="dashboard-actions">
+                <input type="text" id="searchInput" placeholder="Search chatbots..." class="search-input">
+                <select id="filterStatus" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="ready">Ready</option>
+                    <option value="processing">Processing</option>
+                    <option value="creating">Creating</option>
+                    <option value="error">Error</option>
+                </select>
+                <select id="filterModel" class="filter-select">
+                    <option value="all">All Models</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                </select>
+                <a href="/create" class="btn-primary">+ New Chatbot</a>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading your chatbots...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-content">
+                <svg class="empty-state-icon" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="80" r="30" fill="#e0e7ff" />
+                    <rect x="70" y="120" width="60" height="50" rx="5" fill="#e0e7ff" />
+                    <circle cx="85" cy="145" r="8" fill="#818cf8" />
+                    <circle cx="115" cy="145" r="8" fill="#818cf8" />
+                    <path d="M 85 155 Q 100 165 115 155" stroke="#818cf8" stroke-width="3" fill="none" stroke-linecap="round" />
+                </svg>
+                <h2>No Chatbots Yet</h2>
+                <p>Create your first chatbot to get started with AI-powered conversations</p>
+                <a href="/create" class="btn-large btn-primary">Create Your First Chatbot</a>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <div class="error-content">
+                <p class="error-message"></p>
+                <button onclick="location.reload()" class="btn-secondary">Try Again</button>
+            </div>
+        </div>
+
+        <!-- Chatbots Grid -->
+        <div id="chatbotsGrid" class="chatbots-grid" style="display: none;">
+            <!-- Chatbot cards will be dynamically inserted here -->
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h2>Delete Chatbot</h2>
+        <p>Are you sure you want to delete <strong id="deleteChatbotName"></strong>?</p>
+        <p class="warning-text">This action cannot be undone. All documents and conversation history will be permanently deleted.</p>
+        <div class="modal-actions">
+            <button id="cancelDelete" class="btn-secondary">Cancel</button>
+            <button id="confirmDelete" class="btn-danger">Delete</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
