@@ -75,21 +75,18 @@ class QueryService:
             logger.error("Failed to initialize QueryService: %s", str(e))
             raise
 
-    def _initialize_llm(self, model_name: str = "gemini-2.5-flash") -> Any:
+    def _initialize_llm(self) -> Any:
         """
-        Initialize the Gemini LLM via LangChain or direct API.
-
-        Args:
-            model_name: Name of the Gemini model to use
+        Initialize the Gemini LLM via LangChain.
 
         Returns:
-            Initialized model instance
+            Initialized ChatGoogleGenerativeAI instance
 
         Raises:
             ImportError: If required packages are not installed
             Exception: If LLM initialization fails
         """
-        if ChatGoogleGenerativeAI is None and not GENAI_AVAILABLE:
+        if ChatGoogleGenerativeAI is None:
             raise ImportError(
                 "langchain-google-genai package is not installed. "
                 "Install it with: pip install langchain-google-genai"
@@ -99,18 +96,20 @@ class QueryService:
             # Use direct Google Generative AI SDK instead of LangChain wrapper
             if GENAI_AVAILABLE:
                 genai.configure(api_key=self.gemini_api_key)
-                # Create model with specified name
-                model = genai.GenerativeModel(model_name)
-                logger.info("Initialized Gemini LLM (%s) via direct API", model_name)
-                return model
+                # Create a wrapper that mimics LangChain interface
+                self.use_direct_api = True
+                self.genai_model = genai.GenerativeModel("gemini-2.5-flash")
+                logger.info("Initialized Gemini LLM (gemini-2.5-flash) via direct API")
+                return self.genai_model
             else:
                 # Fallback to LangChain
                 llm = ChatGoogleGenerativeAI(
-                    model=model_name,
+                    model="gemini-1.5-flash",
                     temperature=0.7,
                     google_api_key=self.gemini_api_key,
                 )
-                logger.info("Initialized Gemini LLM (%s) via LangChain", model_name)
+                self.use_direct_api = False
+                logger.info("Initialized Gemini LLM (gemini-1.5-flash) via LangChain")
                 return llm
         except Exception as e:
             logger.error("Failed to initialize Gemini LLM: %s", str(e))
@@ -171,7 +170,6 @@ class QueryService:
         question: str,
         context: List[Dict[str, Any]],
         system_prompt: str,
-        model_name: str = "gemini-2.5-flash",
         history: Optional[List[Dict[str, str]]] = None,
     ) -> str:
         """
@@ -184,7 +182,6 @@ class QueryService:
             question: User's question text
             context: List of retrieved context documents
             system_prompt: System prompt defining chatbot behavior
-            model_name: Name of the Gemini model to use
             history: Optional conversation history (list of role/content dicts)
 
         Returns:
@@ -201,9 +198,6 @@ class QueryService:
             raise ValueError("Valid system_prompt is required")
 
         try:
-            # Initialize LLM with the specified model
-            llm = self._initialize_llm(model_name)
-
             # Build context text from retrieved documents
             context_text = ""
             if context and len(context) > 0:
@@ -246,15 +240,15 @@ class QueryService:
             full_prompt = "\n".join(prompt_parts)
 
             # Call Gemini API
-            logger.debug("Sending prompt to Gemini API with model %s", model_name)
+            logger.debug("Sending prompt to Gemini API")
 
-            if GENAI_AVAILABLE:
+            if self.use_direct_api:
                 # Use direct Google Generative AI SDK
-                response = llm.generate_content(full_prompt)
+                response = self.llm.generate_content(full_prompt)
                 response_text = response.text
             else:
                 # Use LangChain wrapper
-                response = llm.invoke(full_prompt)
+                response = self.llm.invoke(full_prompt)
                 # Extract response text
                 if hasattr(response, "content"):
                     response_text = response.content
@@ -262,9 +256,7 @@ class QueryService:
                     response_text = str(response)
 
             logger.info(
-                "Generated response for question (length: %d) using model %s",
-                len(response_text),
-                model_name
+                "Generated response for question (length: %d)", len(response_text)
             )
             return response_text
 
@@ -318,7 +310,7 @@ class QueryService:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT id, name, system_prompt, model, status
+                    SELECT id, name, system_prompt, status
                     FROM chatbots
                     WHERE id = ?
                 """,
@@ -336,14 +328,13 @@ class QueryService:
                     )
 
                 system_prompt = chatbot["system_prompt"]
-                model_name = chatbot["model"] or "gemini-2.5-flash"  # Default to gemini-2.5-flash if None
 
             # Retrieve relevant context
             context_docs = self.retrieve_context(chatbot_id, question, k=k)
 
-            # Generate response with the chatbot's selected model
+            # Generate response
             response_text = self.generate_response(
-                question, context_docs, system_prompt, model_name=model_name, history=chat_history
+                question, context_docs, system_prompt, history=chat_history
             )
 
             # Prepare source information
