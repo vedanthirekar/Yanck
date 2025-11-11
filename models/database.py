@@ -67,7 +67,6 @@ def init_database():
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 system_prompt TEXT NOT NULL,
-                model TEXT DEFAULT 'gemini-2.5-flash',
                 status TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -125,27 +124,3 @@ def reset_database():
     drop_tables()
     init_database()
     print("Database reset complete")
-
-
-def migrate_add_model_field():
-    """
-    Migration to add model field to chatbots table.
-    Safe to run multiple times - checks if column exists first.
-    """
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-
-        # Check if model column exists
-        cursor.execute("PRAGMA table_info(chatbots)")
-        columns = [row[1] for row in cursor.fetchall()]
-
-        if 'model' not in columns:
-            # Add model column with default value
-            cursor.execute("""
-                ALTER TABLE chatbots
-                ADD COLUMN model TEXT DEFAULT 'gemini-2.5-flash'
-            """)
-            conn.commit()
-            print("Added 'model' column to chatbots table")
-        else:
-            print("Column 'model' already exists in chatbots table")

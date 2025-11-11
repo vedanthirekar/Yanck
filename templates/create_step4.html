@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Step 4: Deploy - RAG Chatbot Platform{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <div class="container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div class="step-label">Basic Settings</div>
+            </div>
+            <div class="step-line completed"></div>
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div class="step-label">Data Upload</div>
+            </div>
+            <div class="step-line completed"></div>
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div class="step-label">Preview & Test</div>
+            </div>
+            <div class="step-line completed"></div>
+            <div class="step active">
+                <div class="step-number">4</div>
+                <div class="step-label">Deploy</div>
+            </div>
+        </div>
+
+        <!-- Form Content -->
+        <div class="wizard-content">
+            <div class="success-icon">🎉</div>
+            <h1>Your Chatbot is Ready!</h1>
+            <p class="wizard-description">Your chatbot has been successfully created and is ready to use</p>
+
+            <div class="deployment-info">
+                <div class="info-card">
+                    <h3>Chatbot Details</h3>
+                    <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value" id="chatbot-name-display"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Documents:</span>
+                        <span class="info-value" id="document-count"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value status-ready">Ready</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Access Your Chatbot</h3>
+                    <div class="chatbot-url-container">
+                        <input 
+                            type="text" 
+                            id="chatbot-url" 
+                            readonly 
+                            class="url-input"
+                        >
+                        <button type="button" class="btn-copy" id="copy-url-btn">
+                            Copy URL
+                        </button>
+                    </div>
+                    <p class="url-hint">Share this URL to let others use your chatbot</p>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="/" class="btn-secondary">Create Another Chatbot</a>
+                <button type="button" class="btn-primary" id="open-chat-btn">Open Chatbot</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/wizard.js') }}"></script>
+<script>
+    // Copy URL functionality
+    document.getElementById('copy-url-btn').addEventListener('click', function() {
+        const urlInput = document.getElementById('chatbot-url');
+        urlInput.select();
+        document.execCommand('copy');
+        
+        const btn = this;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+
+    // Open chat button
+    document.getElementById('open-chat-btn').addEventListener('click', function() {
+        const chatbotId = sessionStorage.getItem('chatbotId');
+        if (chatbotId) {
+            window.location.href = `/chat/${chatbotId}`;
+        }
+    });
+
+    // Set chatbot URL
+    window.addEventListener('DOMContentLoaded', function() {
+        const chatbotId = sessionStorage.getItem('chatbotId');
+        if (chatbotId) {
+            const chatbotUrl = `${window.location.origin}/chat/${chatbotId}`;
+            document.getElementById('chatbot-url').value = chatbotUrl;
+        }
+    });
+</script>
+{% endblock %}
