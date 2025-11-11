@@ -336,7 +336,7 @@ class QueryService:
                     )
 
                 system_prompt = chatbot["system_prompt"]
-                model_name = chatbot.get("model", "gemini-2.5-flash")  # Default to gemini-2.5-flash
+                model_name = chatbot["model"] or "gemini-2.5-flash"  # Default to gemini-2.5-flash if None
 
             # Retrieve relevant context
             context_docs = self.retrieve_context(chatbot_id, question, k=k)
