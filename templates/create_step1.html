@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Step 1: Basic Settings - RAG Chatbot Platform{% endblock %}
+{% block title %}Step 1: Data - RAG Chatbot Platform{% endblock %}
 
 {% block content %}
 <div class="wizard-container">
@@ -9,37 +9,33 @@
         <div class="step-indicator">
             <div class="step active">
                 <div class="step-number">1</div>
-                <div class="step-label">Basic Settings</div>
+                <div class="step-label">Data</div>
             </div>
             <div class="step-line"></div>
             <div class="step">
                 <div class="step-number">2</div>
-                <div class="step-label">Data Upload</div>
+                <div class="step-label">Playground</div>
             </div>
             <div class="step-line"></div>
             <div class="step">
                 <div class="step-number">3</div>
-                <div class="step-label">Preview & Test</div>
-            </div>
-            <div class="step-line"></div>
-            <div class="step">
-                <div class="step-number">4</div>
                 <div class="step-label">Deploy</div>
             </div>
         </div>
 
         <!-- Form Content -->
         <div class="wizard-content">
-            <h1>Basic Settings</h1>
-            <p class="wizard-description">Configure your chatbot's name and behavior</p>
+            <h1>Configure Your Chatbot</h1>
+            <p class="wizard-description">Set up your chatbot's name, system prompt, and training data</p>
 
             <form id="step1-form" class="wizard-form">
+                <!-- Chatbot Name -->
                 <div class="form-group">
                     <label for="chatbot-name">Chatbot Name <span class="required">*</span></label>
-                    <input 
-                        type="text" 
-                        id="chatbot-name" 
-                        name="name" 
+                    <input
+                        type="text"
+                        id="chatbot-name"
+                        name="name"
                         placeholder="e.g., Customer Support Bot"
                         required
                         maxlength="100"
@@ -47,11 +43,12 @@
                     <span class="error-message" id="name-error"></span>
                 </div>
 
+                <!-- System Prompt -->
                 <div class="form-group">
                     <label for="system-prompt">System Prompt <span class="required">*</span></label>
-                    <textarea 
-                        id="system-prompt" 
-                        name="system_prompt" 
+                    <textarea
+                        id="system-prompt"
+                        name="system_prompt"
                         rows="6"
                         placeholder="e.g., You are a helpful customer support assistant. Answer questions based on the provided documentation. Be concise and professional."
                         required
@@ -61,9 +58,47 @@
                     <span class="error-message" id="prompt-error"></span>
                 </div>
 
+                <!-- File Upload Section -->
+                <div class="form-group">
+                    <label>Upload Training Documents <span class="required">*</span></label>
+                    <div class="file-upload-area" id="file-upload-area">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">Drag and drop files here or click to browse</p>
+                        <p class="upload-hint">Supported formats: PDF, TXT, DOCX (Max 50MB per file, up to 10 files)</p>
+                        <input
+                            type="file"
+                            id="file-input"
+                            name="files"
+                            multiple
+                            accept=".pdf,.txt,.docx"
+                            style="display: none;"
+                        >
+                    </div>
+                    <span class="error-message" id="file-error"></span>
+                </div>
+
+                <!-- Uploaded Files List -->
+                <div id="file-list" class="file-list"></div>
+
+                <!-- Upload Progress -->
+                <div id="upload-progress" class="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">Uploading files...</p>
+                </div>
+
+                <!-- Processing Status -->
+                <div id="processing-status" class="processing-status" style="display: none;">
+                    <div class="status-icon">⚙️</div>
+                    <p class="status-text">Processing documents and generating embeddings...</p>
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Form Actions -->
                 <div class="form-actions">
                     <a href="/" class="btn-secondary">Cancel</a>
-                    <button type="submit" class="btn-primary">Next: Data Upload</button>
+                    <button type="submit" class="btn-primary" id="next-btn" disabled>Next: Playground</button>
                 </div>
             </form>
         </div>
