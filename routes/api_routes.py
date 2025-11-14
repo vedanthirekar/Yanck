@@ -22,6 +22,7 @@ def create_chatbot():
     Request Body (JSON):
         - name: Chatbot name (required, non-empty string)
         - system_prompt: System prompt for chatbot behavior (required, non-empty string)
+        - model: LLM model to use (optional, defaults to 'gemini-2.5-flash')
 
     Returns:
         JSON response with chatbot metadata (201 Created)
@@ -31,7 +32,8 @@ def create_chatbot():
         POST /api/chatbot
         {
             "name": "Customer Support Bot",
-            "system_prompt": "You are a helpful customer support assistant."
+            "system_prompt": "You are a helpful customer support assistant.",
+            "model": "gemini-2.5-flash"
         }
     """
     try:
@@ -49,6 +51,7 @@ def create_chatbot():
         # Validate required fields
         name = data.get('name')
         system_prompt = data.get('system_prompt')
+        model = data.get('model', 'gemini-2.5-flash')  # Default to gemini-2.5-flash
 
         if not name or not isinstance(name, str) or not name.strip():
             return jsonify({
@@ -68,7 +71,7 @@ def create_chatbot():
 
         # Create chatbot using service
         chatbot_service = current_app.chatbot_service
-        chatbot = chatbot_service.create_chatbot(name.strip(), system_prompt.strip())
+        chatbot = chatbot_service.create_chatbot(name.strip(), system_prompt.strip(), model.strip())
 
         logger.info("Created chatbot via API: %s", chatbot['id'])
 
@@ -200,6 +203,97 @@ def upload_documents(chatbot_id):
             }
         }), 500
 
+
+
+@api_bp.route('/chatbots', methods=['GET'])
+def get_all_chatbots():
+    """
+    Get all chatbots with metadata and document counts.
+
+    Returns:
+        JSON response with list of chatbots (200 OK)
+        or error message (500 Internal Server Error)
+
+    Response includes:
+        - chatbots: List of chatbot objects with metadata and document_count
+
+    Example:
+        GET /api/chatbots
+    """
+    try:
+        chatbot_service = current_app.chatbot_service
+        chatbots = chatbot_service.get_all_chatbots()
+
+        logger.info("Retrieved %d chatbots via API", len(chatbots))
+
+        return jsonify({
+            "success": True,
+            "chatbots": chatbots,
+            "count": len(chatbots)
+        }), 200
+
+    except Exception as e:
+        logger.error("Error retrieving all chatbots: %s", str(e))
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Failed to retrieve chatbots",
+                "details": str(e) if current_app.config.get('ENV') == 'development' else None
+            }
+        }), 500
+
+
+@api_bp.route('/chatbot/<chatbot_id>', methods=['GET'])
+def get_chatbot(chatbot_id):
+    """
+    Get a single chatbot's details by ID.
+
+    URL Parameters:
+        - chatbot_id: Unique identifier of the chatbot
+
+    Returns:
+        JSON response with chatbot details (200 OK)
+        or error message (404 Not Found, 500 Internal Server Error)
+
+    Example:
+        GET /api/chatbot/{chatbot_id}
+    """
+    try:
+        chatbot_service = current_app.chatbot_service
+        chatbot = chatbot_service.get_chatbot(chatbot_id)
+
+        if chatbot is None:
+            return jsonify({
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": f"Chatbot '{chatbot_id}' not found"
+                }
+            }), 404
+
+        logger.info("Retrieved chatbot '%s' via API", chatbot_id)
+
+        return jsonify({
+            "success": True,
+            "chatbot": chatbot
+        }), 200
+
+    except ValueError as e:
+        logger.warning("Validation error in get_chatbot: %s", str(e))
+        return jsonify({
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": str(e)
+            }
+        }), 400
+    except Exception as e:
+        logger.error("Error retrieving chatbot '%s': %s", chatbot_id, str(e))
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Failed to retrieve chatbot",
+                "details": str(e) if current_app.config.get('ENV') == 'development' else None
+            }
+        }), 500
 
 
 @api_bp.route('/chatbot/<chatbot_id>/status', methods=['GET'])
@@ -403,6 +497,155 @@ def query_chatbot(chatbot_id):
             }
         }), 500
 
+
+
+@api_bp.route('/chatbot/<chatbot_id>/documents/<document_id>', methods=['DELETE'])
+def delete_document(chatbot_id, document_id):
+    """
+    Delete a specific document from a chatbot.
+
+    This endpoint:
+    - Deletes the document file
+    - Removes the document from the database
+    - Regenerates the vector store with remaining documents
+
+    URL Parameters:
+        - chatbot_id: Unique identifier of the chatbot
+        - document_id: Unique identifier of the document
+
+    Returns:
+        JSON response with success message (200 OK)
+        or error message (404 Not Found, 500 Internal Server Error)
+
+    Example:
+        DELETE /api/chatbot/{chatbot_id}/documents/{document_id}
+    """
+    try:
+        # Delete document using service
+        document_service = current_app.document_service
+        result = document_service.delete_document(chatbot_id, document_id)
+
+        logger.info("Deleted document '%s' from chatbot '%s'", document_id, chatbot_id)
+
+        return jsonify(result), 200
+
+    except ValueError as e:
+        logger.warning("Validation error in delete_document: %s", str(e))
+        error_message = str(e)
+
+        # Check if it's a "not found" error
+        if "not found" in error_message.lower():
+            return jsonify({
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": error_message
+                }
+            }), 404
+        else:
+            return jsonify({
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": error_message
+                }
+            }), 400
+    except Exception as e:
+        logger.error("Error deleting document '%s' from chatbot '%s': %s", document_id, chatbot_id, str(e))
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Failed to delete document",
+                "details": str(e) if current_app.config.get('ENV') == 'development' else None
+            }
+        }), 500
+
+
+@api_bp.route('/chatbot/<chatbot_id>', methods=['PUT'])
+def update_chatbot(chatbot_id):
+    """
+    Update a chatbot's system prompt and/or model.
+
+    URL Parameters:
+        - chatbot_id: Unique identifier of the chatbot
+
+    Request Body (JSON):
+        - system_prompt: New system prompt (optional)
+        - model: New model identifier (optional)
+
+    Returns:
+        JSON response with success message (200 OK)
+        or error message (400 Bad Request, 404 Not Found, 500 Internal Server Error)
+
+    Example:
+        PUT /api/chatbot/{chatbot_id}
+        {
+            "system_prompt": "You are a helpful assistant.",
+            "model": "gemini-1.5-flash"
+        }
+    """
+    try:
+        # Validate request has JSON content
+        if not request.is_json:
+            return jsonify({
+                "error": {
+                    "code": "INVALID_REQUEST",
+                    "message": "Request must be JSON"
+                }
+            }), 400
+
+        data = request.get_json()
+
+        # Get fields to update
+        system_prompt = data.get('system_prompt')
+        model = data.get('model')
+
+        # Validate at least one field is provided
+        if system_prompt is None and model is None:
+            return jsonify({
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "At least one of 'system_prompt' or 'model' must be provided"
+                }
+            }), 400
+
+        # Update chatbot using service
+        chatbot_service = current_app.chatbot_service
+        chatbot_service.update_chatbot(chatbot_id, system_prompt=system_prompt, model=model)
+
+        logger.info("Updated chatbot '%s'", chatbot_id)
+
+        return jsonify({
+            "success": True,
+            "message": "Chatbot updated successfully"
+        }), 200
+
+    except ValueError as e:
+        logger.warning("Validation error in update_chatbot: %s", str(e))
+        error_message = str(e)
+
+        # Check if it's a "not found" error
+        if "not found" in error_message.lower():
+            return jsonify({
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": error_message
+                }
+            }), 404
+        else:
+            return jsonify({
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": error_message
+                }
+            }), 400
+    except Exception as e:
+        logger.error("Error updating chatbot '%s': %s", chatbot_id, str(e))
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Failed to update chatbot",
+                "details": str(e) if current_app.config.get('ENV') == 'development' else None
+            }
+        }), 500
 
 
 @api_bp.route('/chatbot/<chatbot_id>', methods=['DELETE'])

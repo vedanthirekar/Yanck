@@ -486,6 +486,123 @@ class DocumentService:
 
             raise Exception(f"Embedding generation failed: {str(e)}") from e
 
+    def delete_document(self, chatbot_id: str, document_id: str) -> Dict[str, Any]:
+        """
+        Delete a document and regenerate the vector store.
+
+        Args:
+            chatbot_id: Unique identifier for the chatbot
+            document_id: Unique identifier for the document to delete
+
+        Returns:
+            Dictionary containing deletion results:
+                - success: Boolean indicating success
+                - message: Status message
+
+        Raises:
+            ValueError: If document doesn't exist or doesn't belong to the chatbot
+            Exception: If deletion or vector store regeneration fails
+        """
+        try:
+            # Get document info and verify it belongs to this chatbot
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, chatbot_id, filename, file_path
+                    FROM documents
+                    WHERE id = ? AND chatbot_id = ?
+                """, (document_id, chatbot_id))
+
+                document = cursor.fetchone()
+
+                if document is None:
+                    raise ValueError(f"Document '{document_id}' not found for chatbot '{chatbot_id}'")
+
+                file_path = document['file_path']
+                filename = document['filename']
+
+            # Delete the physical file
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.info("Deleted file: %s", file_path)
+                except Exception as e:
+                    logger.error("Failed to delete file '%s': %s", file_path, str(e))
+                    # Continue with database deletion even if file deletion fails
+
+            # Delete the document record from database
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM documents WHERE id = ?
+                """, (document_id,))
+
+            logger.info("Deleted document '%s' from chatbot '%s'", filename, chatbot_id)
+
+            # Check if there are any remaining documents
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT COUNT(*) as count FROM documents WHERE chatbot_id = ?
+                """, (chatbot_id,))
+                remaining_count = cursor.fetchone()['count']
+
+            # If no documents remain, delete the vector store and update chatbot status
+            if remaining_count == 0:
+                try:
+                    self.vector_store_manager.delete_store(chatbot_id)
+                    logger.info("Deleted vector store for chatbot '%s' (no documents remaining)", chatbot_id)
+                except FileNotFoundError:
+                    logger.warning("Vector store for chatbot '%s' not found", chatbot_id)
+
+                # Update chatbot status to 'creating' since it has no documents
+                with get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE chatbots
+                        SET status = 'creating', updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (chatbot_id,))
+
+                return {
+                    "success": True,
+                    "message": f"Document '{filename}' deleted. No documents remain.",
+                    "remaining_documents": 0
+                }
+            else:
+                # Regenerate vector store with remaining documents
+                logger.info("Regenerating vector store for chatbot '%s' after document deletion", chatbot_id)
+
+                # Delete existing vector store
+                try:
+                    self.vector_store_manager.delete_store(chatbot_id)
+                except FileNotFoundError:
+                    pass
+
+                # Get all remaining documents
+                with get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE documents
+                        SET status = 'uploaded'
+                        WHERE chatbot_id = ?
+                    """, (chatbot_id,))
+
+                # Regenerate embeddings for remaining documents
+                self.generate_embeddings(chatbot_id)
+
+                return {
+                    "success": True,
+                    "message": f"Document '{filename}' deleted. Vector store regenerated.",
+                    "remaining_documents": remaining_count
+                }
+
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.error("Failed to delete document '%s': %s", document_id, str(e))
+            raise Exception(f"Document deletion failed: {str(e)}") from e
+
     def get_document_status(self, chatbot_id: str) -> Dict[str, Any]:
         """
         Get the processing status of documents for a chatbot.
