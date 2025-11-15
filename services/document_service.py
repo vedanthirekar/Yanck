@@ -42,8 +42,8 @@ class DocumentService:
     MAX_FILES_PER_CHATBOT = 10
 
     # Text chunking configuration
-    CHUNK_SIZE = 500
-    CHUNK_OVERLAP = 50
+    CHUNK_SIZE = 800
+    CHUNK_OVERLAP = 150
 
     def __init__(
         self,

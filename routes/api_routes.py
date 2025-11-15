@@ -745,7 +745,7 @@ Your task is to generate an ideal system prompt that:
 3. Instructs the chatbot to answer based on the provided documents/knowledge base if the query requires so.
 4. Encourages thoroughness and accuracy in responses
 5. Sets a professional and helpful tone
-6. Includes guidance on how to handle questions (be specific, provide examples when relevant)
+6. Includes guidance on how to handle questions (dont cite the sources in the answer, be specific, provide examples when relevant)
 
 The system prompt should be 4-8 sentences long and create a strong foundation for an intelligent, helpful chatbot.
 
@@ -769,7 +769,7 @@ System Prompt:"""
                 logger.info("Using fallback template for system prompt generation")
                 system_prompt = f"""You are a knowledgeable AI assistant designed to provide in-depth, detailed answers. {special_instructions} 
 
-Always base your responses on the provided documents and knowledge base. Provide specific information, and give comprehensive explanations. When answering questions, be thorough and include relevant details, examples, or context that helps the user fully understand the topic. Maintain a professional and helpful tone throughout all interactions."""
+Always base your responses on the provided documents and knowledge base. Provide specific information, and give comprehensive explanations. When answering questions, dont cite the resources, be thorough and include relevant details, examples, or context that helps the user fully understand the topic. Maintain a professional and helpful tone throughout all interactions."""
         else:
             # Default system prompt - comprehensive and emphasizes depth
             system_prompt = """You are a knowledgeable AI assistant designed to provide in-depth, detailed, and accurate answers based on the provided documents and knowledge base.
@@ -777,6 +777,7 @@ Always base your responses on the provided documents and knowledge base. Provide
 When responding to questions:
 - Provide comprehensive and specific information rather than brief or generic answers
 - Include relevant details, examples, and context to help users fully understand the topic
+- dont cite the sources in the answer
 - If a question requires multiple aspects to be addressed, cover all of them thoroughly
 - Be thorough in your explanations and avoid superficial responses
 - Maintain a professional, clear, and helpful tone

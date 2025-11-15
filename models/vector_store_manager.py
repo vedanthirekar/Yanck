@@ -323,9 +323,16 @@ class VectorStoreManager:
                     results.append(doc)
             
             logger.info(
-                f"Retrieved {len(results)} documents for chatbot '{chatbot_id}' "
-                f"(requested k={k})"
+                f"FAISS search completed for chatbot '{chatbot_id}': "
+                f"Retrieved {len(results)} documents from {index.ntotal} total vectors (k={k})"
             )
+            
+            if results:
+                logger.debug(
+                    f"Distance statistics - Min: {min(r['score'] for r in results):.3f}, "
+                    f"Max: {max(r['score'] for r in results):.3f}, "
+                    f"Avg: {sum(r['score'] for r in results) / len(results):.3f}"
+                )
             
             return results
             

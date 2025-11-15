@@ -117,18 +117,22 @@ class QueryService:
             raise Exception(f"LLM initialization failed: {str(e)}") from e
 
     def retrieve_context(
-        self, chatbot_id: str, question: str, k: int = 4
+        self, chatbot_id: str, question: str, k: int = 15, max_distance: float = 1.5
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve relevant context from vector store using similarity search.
+        Retrieve relevant context from vector store using similarity search with score thresholding.
 
         Args:
             chatbot_id: Unique identifier for the chatbot
             question: User's question text
-            k: Number of most similar documents to retrieve (default: 4)
+            k: Number of most similar documents to retrieve (default: 15)
+            max_distance: Maximum distance threshold for filtering results (default: 1.5)
+                         Lower values = stricter filtering, only very similar results
+                         Higher values = more lenient, includes less similar results
 
         Returns:
             List of dictionaries containing retrieved documents with metadata
+            (filtered by distance threshold)
 
         Raises:
             ValueError: If inputs are invalid
@@ -150,13 +154,42 @@ class QueryService:
                 chatbot_id, query_embedding, k=k
             )
 
-            logger.info(
-                "Retrieved %d context documents for chatbot '%s'",
-                len(results),
-                chatbot_id,
-            )
+            # Log initial retrieval
+            if results:
+                logger.info(
+                    "Initial retrieval: %d documents (k=%d). Distance range: %.3f - %.3f",
+                    len(results),
+                    k,
+                    min(r.get("score", 0) for r in results),
+                    max(r.get("score", 0) for r in results)
+                )
+            else:
+                logger.warning("No documents found in vector store for chatbot '%s'", chatbot_id)
 
-            return results
+            # Apply distance threshold filtering
+            filtered_results = [
+                result for result in results 
+                if result.get('score', float('inf')) <= max_distance
+            ]
+            
+            # Log filtering results
+            filtered_count = len(results) - len(filtered_results)
+            if filtered_count > 0:
+                logger.info(
+                    "Filtered out %d documents with distance > %.2f. "
+                    "Keeping %d high-quality matches.",
+                    filtered_count,
+                    max_distance,
+                    len(filtered_results)
+                )
+            else:
+                logger.info(
+                    "All %d retrieved documents passed the distance threshold (%.2f)",
+                    len(filtered_results),
+                    max_distance
+                )
+
+            return filtered_results
 
         except (ValueError, FileNotFoundError):
             raise
@@ -279,7 +312,7 @@ class QueryService:
         chatbot_id: str,
         question: str,
         chat_history: Optional[List[Dict[str, str]]] = None,
-        k: int = 4,
+        k: int = 15,
     ) -> Dict[str, Any]:
         """
         Process a user query using the complete RAG pipeline.
@@ -294,7 +327,7 @@ class QueryService:
             chatbot_id: Unique identifier for the chatbot
             question: User's question text
             chat_history: Optional conversation history
-            k: Number of context documents to retrieve (default: 4)
+            k: Number of context documents to retrieve (default: 15)
 
         Returns:
             Dictionary containing:
@@ -339,19 +372,51 @@ class QueryService:
                 model_name = chatbot["model"] or "gemini-2.5-flash"  # Default to gemini-2.5-flash if None
 
             # Retrieve relevant context
+            logger.info("Retrieving context for query: '%s...' (chatbot: %s)", question[:50], chatbot_id)
             context_docs = self.retrieve_context(chatbot_id, question, k=k)
+            
+            # Log retrieval statistics
+            if context_docs:
+                logger.info(
+                    "Retrieved %d documents after filtering (requested k=%d). "
+                    "Distance range: %.3f - %.3f",
+                    len(context_docs),
+                    k,
+                    min(doc.get("score", 0) for doc in context_docs),
+                    max(doc.get("score", 0) for doc in context_docs)
+                )
+                
+                # Log individual document scores for debugging
+                for i, doc in enumerate(context_docs, 1):
+                    logger.debug(
+                        "  [%d] %s (chunk %d) - distance: %.3f",
+                        i,
+                        doc.get("filename", "Unknown"),
+                        doc.get("chunk_index", 0),
+                        doc.get("score", 0.0)
+                    )
+            else:
+                logger.warning(
+                    "No documents passed the distance threshold for chatbot '%s'. "
+                    "Query may not match available content.",
+                    chatbot_id
+                )
 
             # Generate response with the chatbot's selected model
+            logger.info("Generating response using model: %s", model_name)
             response_text = self.generate_response(
                 question, context_docs, system_prompt, model_name=model_name, history=chat_history
             )
 
             # Prepare source information
             sources = []
+            unique_files = set()
             for doc in context_docs:
+                filename = doc.get("filename", "Unknown")
+                unique_files.add(filename)
                 sources.append(
                     {
-                        "filename": doc.get("filename", "Unknown"),
+                        "filename": filename,
                         "chunk_index": doc.get("chunk_index", 0),
                         "score": doc.get("score", 0.0),
                     }
@@ -363,7 +428,13 @@ class QueryService:
                 "chatbot_id": chatbot_id,
             }
 
-            logger.info("Successfully processed query for chatbot '%s'", chatbot_id)
+            logger.info(
+                "Successfully processed query for chatbot '%s'. "
+                "Used %d chunks from %d unique files.",
+                chatbot_id,
+                len(sources),
+                len(unique_files)
+            )
             return result
 
         except ValueError:
