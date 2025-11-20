@@ -1,5 +1,5 @@
 /**
- * Step 1: Basic Settings - Chatbot Name and Special Instructions
+ * Step 1: Data - Chatbot Name, Special Instructions, and File Upload
  */
 
 // Utility functions
@@ -27,10 +27,14 @@ function clearAllErrors() {
     });
 }
 
-function saveChatbotData(chatbotId, chatbotName, specialInstructions) {
-    sessionStorage.setItem('chatbotId', chatbotId);
-    sessionStorage.setItem('chatbotName', chatbotName);
-    sessionStorage.setItem('specialInstructions', specialInstructions || '');
+function markDraftDataChanged() {
+    sessionStorage.setItem('draftDataChanged', 'true');
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 // Initialize Step 1
@@ -40,13 +44,23 @@ function initStep1() {
 
     clearAllErrors();
 
+    // Get or create draft_id from sessionStorage
+    let draftId = sessionStorage.getItem('draftId');
+    if (!draftId) {
+        draftId = generateUUID();
+        sessionStorage.setItem('draftId', draftId);
+    }
+
+    // Load existing files if any
+    loadExistingFiles(draftId);
+
     // Handle file upload
     const fileInput = document.getElementById('file-input');
     const fileUploadArea = document.getElementById('file-upload-area');
     const fileList = document.getElementById('file-list');
     const nextBtn = document.getElementById('next-btn');
 
-    let selectedFiles = [];
+    let uploadedFiles = []; // Store uploaded file info
 
     // Click to browse files
     fileUploadArea.addEventListener('click', () => {
@@ -55,7 +69,7 @@ function initStep1() {
 
     // Handle file selection
     fileInput.addEventListener('change', (e) => {
-        handleFiles(e.target.files);
+        handleFiles(e.target.files, draftId);
     });
 
     // Drag and drop handlers
@@ -71,23 +85,29 @@ function initStep1() {
     fileUploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         fileUploadArea.classList.remove('drag-over');
-        handleFiles(e.dataTransfer.files);
+        handleFiles(e.dataTransfer.files, draftId);
     });
 
-    // Handle selected files
-    function handleFiles(files) {
+    // Handle file upload
+    async function handleFiles(files, draftId) {
         clearError('file-error');
 
         const filesArray = Array.from(files);
 
-        if (selectedFiles.length + filesArray.length > 10) {
+        if (filesArray.length === 0) return;
+
+        // Check total file count (including existing)
+        const currentCount = uploadedFiles.length;
+        if (currentCount + filesArray.length > 10) {
             showError('file-error', 'Maximum 10 files allowed per chatbot');
             return;
         }
 
+        // Validate files
         const allowedExtensions = ['.pdf', '.txt', '.docx'];
         const maxSize = 50 * 1024 * 1024; // 50MB
 
+        const validFiles = [];
         for (const file of filesArray) {
             const fileName = file.name.toLowerCase();
             const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
@@ -102,13 +122,70 @@ function initStep1() {
                 continue;
             }
 
-            selectedFiles.push(file);
+            validFiles.push(file);
         }
 
-        updateFileList();
+        if (validFiles.length === 0) return;
 
-        if (selectedFiles.length > 0) {
-            nextBtn.disabled = false;
+        // Upload files
+        const formData = new FormData();
+        validFiles.forEach(file => {
+            formData.append('files', file);
+        });
+        formData.append('draft_id', draftId);
+
+        const progressContainer = document.getElementById('upload-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        progressContainer.style.display = 'block';
+
+        try {
+            const response = await fetch('/api/draft/files', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            progressContainer.style.display = 'none';
+
+            if (!response.ok) {
+                showError('file-error', data.error?.message || 'Failed to upload files');
+                return;
+            }
+
+            // Add uploaded files to list
+            uploadedFiles.push(...data.uploaded_files);
+            updateFileList();
+            markDraftDataChanged();
+
+            if (uploadedFiles.length > 0) {
+                nextBtn.disabled = false;
+            }
+
+        } catch (error) {
+            console.error('Error uploading files:', error);
+            showError('file-error', 'Network error. Please check your connection and try again.');
+            progressContainer.style.display = 'none';
+        }
+    }
+
+    // Load existing files
+    async function loadExistingFiles(draftId) {
+        try {
+            const response = await fetch(`/api/draft/${draftId}/files`);
+            const data = await response.json();
+
+            if (response.ok && data.files) {
+                uploadedFiles = data.files;
+                updateFileList();
+
+                if (uploadedFiles.length > 0) {
+                    nextBtn.disabled = false;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading existing files:', error);
         }
     }
 
@@ -116,34 +193,50 @@ function initStep1() {
     function updateFileList() {
         fileList.innerHTML = '';
 
-        selectedFiles.forEach((file, index) => {
+        uploadedFiles.forEach((file, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item';
             fileItem.innerHTML = `
-                <span class="file-name">📄 ${file.name}</span>
-                <span class="file-size">${formatFileSize(file.size)}</span>
-                <button type="button" class="btn-remove" data-index="${index}">✕</button>
+                <span class="file-name">📄 ${file.filename || file.id}</span>
+                <span class="file-size">${formatFileSize(file.file_size || 0)}</span>
+                <button type="button" class="btn-remove" data-file-id="${file.id}">✕</button>
             `;
             fileList.appendChild(fileItem);
         });
 
+        // Add delete handlers
         fileList.querySelectorAll('.btn-remove').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const index = parseInt(e.target.dataset.index);
-                selectedFiles.splice(index, 1);
-                updateFileList();
-
-                if (selectedFiles.length === 0) {
-                    nextBtn.disabled = true;
-                }
+            btn.addEventListener('click', async (e) => {
+                const fileId = e.target.dataset.fileId;
+                await deleteFile(draftId, fileId);
             });
         });
     }
 
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    // Delete file
+    async function deleteFile(draftId, fileId) {
+        try {
+            const response = await fetch(`/api/draft/${draftId}/files/${fileId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                // Remove from local list
+                uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+                updateFileList();
+                markDraftDataChanged();
+
+                if (uploadedFiles.length === 0) {
+                    nextBtn.disabled = true;
+                }
+            } else {
+                const data = await response.json();
+                showError('file-error', data.error?.message || 'Failed to delete file');
+            }
+        } catch (error) {
+            console.error('Error deleting file:', error);
+            showError('file-error', 'Network error. Please try again.');
+        }
     }
 
     // Handle form submission
@@ -161,153 +254,29 @@ function initStep1() {
             hasError = true;
         }
 
-        if (selectedFiles.length === 0) {
-            showError('file-error', 'Please select at least one file');
+        if (uploadedFiles.length === 0) {
+            showError('file-error', 'Please upload at least one file');
             hasError = true;
         }
 
         if (hasError) return;
 
-        nextBtn.disabled = true;
-        const originalText = nextBtn.textContent;
-        nextBtn.textContent = 'Processing...';
+        // Save data to sessionStorage
+        sessionStorage.setItem('chatbotName', name);
+        sessionStorage.setItem('specialInstructions', specialInstructions);
+        sessionStorage.setItem('draftId', draftId);
 
-        try {
-            // Step 1: Generate system prompt
-            const promptResponse = await fetch('/api/generate-system-prompt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    special_instructions: specialInstructions
-                })
-            });
-
-            const promptData = await promptResponse.json();
-
-            if (!promptResponse.ok) {
-                showError('instructions-error', promptData.error?.message || 'Failed to generate system prompt');
-                nextBtn.disabled = false;
-                nextBtn.textContent = originalText;
-                return;
-            }
-
-            const systemPrompt = promptData.system_prompt;
-
-            // Step 2: Create chatbot
-            const chatbotResponse = await fetch('/api/chatbot', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: name,
-                    system_prompt: systemPrompt
-                })
-            });
-
-            const chatbotData = await chatbotResponse.json();
-
-            if (!chatbotResponse.ok) {
-                showError('name-error', chatbotData.error?.message || 'Failed to create chatbot');
-                nextBtn.disabled = false;
-                nextBtn.textContent = originalText;
-                return;
-            }
-
-            const chatbotId = chatbotData.id;
-
-            // Step 3: Upload files
-            const formData = new FormData();
-            selectedFiles.forEach(file => {
-                formData.append('files', file);
-            });
-
-            const progressContainer = document.getElementById('upload-progress');
-            const progressFill = document.getElementById('progress-fill');
-            const progressText = document.getElementById('progress-text');
-            progressContainer.style.display = 'block';
-
-            const uploadResponse = await fetch(`/api/chatbot/${chatbotId}/documents`, {
-                method: 'POST',
-                body: formData
-            });
-
-            const uploadData = await uploadResponse.json();
-
-            if (!uploadResponse.ok) {
-                showError('file-error', uploadData.error?.message || 'Failed to upload files');
-                progressContainer.style.display = 'none';
-                nextBtn.disabled = false;
-                nextBtn.textContent = originalText;
-                return;
-            }
-
-            progressFill.style.width = '100%';
-            progressText.textContent = 'Upload complete! Processing documents...';
-
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                const processingStatus = document.getElementById('processing-status');
-                processingStatus.style.display = 'block';
-
-                pollProcessingStatus(chatbotId, name, specialInstructions);
-            }, 1000);
-
-        } catch (error) {
-            console.error('Error:', error);
-            showError('file-error', 'Network error. Please check your connection and try again.');
-            nextBtn.disabled = false;
-            nextBtn.textContent = originalText;
-        }
+        // Navigate to step 2
+        window.location.href = '/create/step/2';
     });
 
-    // Poll processing status
-    async function pollProcessingStatus(chatbotId, name, specialInstructions) {
-        const maxAttempts = 60;
-        let attempts = 0;
-
-        const pollInterval = setInterval(async () => {
-            attempts++;
-
-            try {
-                const response = await fetch(`/api/chatbot/${chatbotId}/status`);
-                const data = await response.json();
-
-                if (!response.ok) {
-                    clearInterval(pollInterval);
-                    showError('file-error', 'Failed to check processing status');
-                    document.getElementById('processing-status').style.display = 'none';
-                    return;
-                }
-
-                if (data.chatbot_status === 'ready') {
-                    clearInterval(pollInterval);
-                    document.getElementById('processing-status').style.display = 'none';
-
-                    // Save data and navigate to step 2
-                    saveChatbotData(chatbotId, name, specialInstructions);
-                    window.location.href = '/create/step/2';
-                } else if (data.chatbot_status === 'error') {
-                    clearInterval(pollInterval);
-                    showError('file-error', 'Error processing documents. Please try again.');
-                    document.getElementById('processing-status').style.display = 'none';
-                }
-
-                if (attempts >= maxAttempts) {
-                    clearInterval(pollInterval);
-                    showError('file-error', 'Processing is taking longer than expected. Please check back later.');
-                    document.getElementById('processing-status').style.display = 'none';
-                }
-
-            } catch (error) {
-                console.error('Error polling status:', error);
-                clearInterval(pollInterval);
-                showError('file-error', 'Failed to check processing status');
-                document.getElementById('processing-status').style.display = 'none';
-            }
-        }, 5000);
+    // Generate UUID
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
 }
 

@@ -115,10 +115,10 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen mesh-bg">
         <Navbar />
         <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-10 w-10 animate-spin text-primary" strokeWidth={2.5} />
         </div>
       </div>
     );
@@ -126,15 +126,15 @@ export default function ChatPage() {
 
   if (!chatbot) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen mesh-bg">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
-          <Alert variant="destructive">
-            <AlertDescription>
+          <Alert variant="destructive" className="border-2">
+            <AlertDescription className="font-medium">
               {error || "Chatbot not found"}
             </AlertDescription>
           </Alert>
-          <Button onClick={() => router.push("/dashboard")} className="mt-4">
+          <Button onClick={() => router.push("/dashboard")} className="mt-6 font-bold">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -144,24 +144,25 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen mesh-bg flex flex-col">
       <Navbar />
 
       {/* Chat Header */}
-      <div className="border-b bg-card">
+      <div className="border-b border-border/50 bg-card/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push("/dashboard")}
+                className="hover:bg-primary/10"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="font-semibold text-lg">{chatbot.name}</h1>
-                <p className="text-xs text-muted-foreground">
+                <h1 className="font-display font-bold text-2xl tracking-tight">{chatbot.name}</h1>
+                <p className="text-sm text-foreground/60 font-medium">
                   {documents.length} document{documents.length !== 1 ? "s" : ""} loaded
                 </p>
               </div>
@@ -170,6 +171,7 @@ export default function ChatPage() {
               variant="outline"
               size="sm"
               onClick={() => setShowInfo(!showInfo)}
+              className="font-semibold border-2"
             >
               <Info className="h-4 w-4 mr-2" />
               Info
@@ -180,33 +182,33 @@ export default function ChatPage() {
 
       {/* Info Panel */}
       {showInfo && (
-        <div className="border-b bg-muted/50">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="grid md:grid-cols-2 gap-4">
+        <div className="border-b border-border/50 bg-muted/30 backdrop-blur-sm">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-medium text-sm mb-2">System Prompt</h3>
-                <p className="text-xs text-muted-foreground line-clamp-3">
+                <h3 className="font-semibold text-base mb-3">System Prompt</h3>
+                <p className="text-sm text-foreground/70 line-clamp-3 font-medium">
                   {chatbot.system_prompt}
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-sm mb-2">Documents</h3>
-                <div className="space-y-1">
+                <h3 className="font-semibold text-base mb-3">Documents</h3>
+                <div className="space-y-2">
                   {documents.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No documents uploaded</p>
+                    <p className="text-sm text-foreground/70 font-medium">No documents uploaded</p>
                   ) : (
                     <>
                       {documents.slice(0, 3).map((doc) => (
                         <div
                           key={doc.id}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          className="flex items-center gap-2 text-sm text-foreground/70 font-medium"
                         >
-                          <FileText className="h-3 w-3" />
+                          <FileText className="h-4 w-4 text-primary" />
                           <span className="truncate">{doc.filename}</span>
                         </div>
                       ))}
                       {documents.length > 3 && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-foreground/70 font-medium">
                           +{documents.length - 3} more
                         </p>
                       )}
@@ -221,24 +223,27 @@ export default function ChatPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Alert variant="destructive" className="border-2">
+            <AlertDescription className="font-medium">{error}</AlertDescription>
           </Alert>
         </div>
       )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <Bot className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">Start a Conversation</h3>
-              <p className="text-muted-foreground mb-6">
+            <div className="text-center py-16">
+              <div className="relative inline-block mb-6">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                <Bot className="h-20 w-20 mx-auto text-primary relative" strokeWidth={2} />
+              </div>
+              <h3 className="text-heading text-3xl mb-3">Start a Conversation</h3>
+              <p className="text-foreground/70 mb-8 text-lg">
                 Ask me anything about the uploaded documents
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-3 justify-center">
                 {["What is this about?", "Summarize the main points", "Tell me more"].map(
                   (suggestion) => (
                     <Button
@@ -246,6 +251,7 @@ export default function ChatPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setInput(suggestion)}
+                      className="font-semibold border-2 hover:bg-primary/5 hover:border-primary/40 transition-all"
                     >
                       {suggestion}
                     </Button>
@@ -254,36 +260,37 @@ export default function ChatPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4 max-w-3xl mx-auto">
+            <div className="space-y-6 max-w-4xl mx-auto">
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex gap-3 ${
+                  className={`flex gap-4 fade-in-up ${
                     message.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   {message.role === "assistant" && (
                     <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-5 w-5 text-primary" />
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative">
+                        <div className="absolute inset-0 bg-primary/20 blur-md rounded-full" />
+                        <Bot className="h-6 w-6 text-primary relative" strokeWidth={2.5} />
                       </div>
                     </div>
                   )}
 
                   <div
-                    className={`rounded-lg px-4 py-3 max-w-[80%] ${
+                    className={`rounded-2xl px-5 py-4 max-w-[80%] ${
                       message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                        : "bg-card/80 backdrop-blur-sm border border-border/50"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-base whitespace-pre-wrap font-medium leading-relaxed">{message.content}</p>
                   </div>
 
                   {message.role === "user" && (
                     <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-5 w-5" />
+                      <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center border border-border/50">
+                        <User className="h-6 w-6" strokeWidth={2.5} />
                       </div>
                     </div>
                   )}
@@ -291,14 +298,15 @@ export default function ChatPage() {
               ))}
 
               {sending && (
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                   <div className="flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Bot className="h-5 w-5 text-primary" />
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative">
+                      <div className="absolute inset-0 bg-primary/20 blur-md rounded-full" />
+                      <Bot className="h-6 w-6 text-primary relative" strokeWidth={2.5} />
                     </div>
                   </div>
-                  <div className="bg-muted rounded-lg px-4 py-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl px-5 py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" strokeWidth={2.5} />
                   </div>
                 </div>
               )}
@@ -310,22 +318,22 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t bg-card">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <form onSubmit={handleSend} className="flex gap-2 max-w-3xl mx-auto">
+      <div className="border-t border-border/50 bg-card/80 backdrop-blur-xl">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <form onSubmit={handleSend} className="flex gap-3 max-w-4xl mx-auto">
             <Input
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               disabled={sending}
-              className="flex-1"
+              className="flex-1 h-14 text-base border-2 focus:border-primary/40 px-5"
             />
-            <Button type="submit" disabled={!input.trim() || sending}>
+            <Button type="submit" disabled={!input.trim() || sending} size="lg" className="btn-primary font-bold px-8 shadow-lg shadow-primary/30">
               {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
               )}
             </Button>
           </form>

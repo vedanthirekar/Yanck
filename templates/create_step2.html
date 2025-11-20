@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Step 2: Data Upload - RAG Chatbot Platform{% endblock %}
+{% block title %}Step 2: Playground - RAG Chatbot Platform{% endblock %}
 
 {% block content %}
 <div class="wizard-container">
@@ -9,72 +9,94 @@
         <div class="step-indicator">
             <div class="step completed">
                 <div class="step-number">✓</div>
-                <div class="step-label">Basic Settings</div>
+                <div class="step-label">Data</div>
             </div>
             <div class="step-line completed"></div>
             <div class="step active">
                 <div class="step-number">2</div>
-                <div class="step-label">Data Upload</div>
+                <div class="step-label">Playground</div>
             </div>
             <div class="step-line"></div>
             <div class="step">
                 <div class="step-number">3</div>
-                <div class="step-label">Preview & Test</div>
-            </div>
-            <div class="step-line"></div>
-            <div class="step">
-                <div class="step-number">4</div>
                 <div class="step-label">Deploy</div>
             </div>
         </div>
 
         <!-- Form Content -->
         <div class="wizard-content">
-            <h1>Data Upload</h1>
-            <p class="wizard-description">Upload documents to train your chatbot (PDF, TXT, DOCX)</p>
+            <h1>Step 2: Playground</h1>
+            <p class="wizard-description">Configure your chatbot's model and system prompt, then test it before deploying</p>
 
-            <div class="upload-info">
+            <div class="playground-info">
                 <p><strong>Chatbot:</strong> <span id="chatbot-name-display"></span></p>
+                <p><strong>Documents:</strong> <span id="document-count">0</span> files uploaded</p>
             </div>
 
-            <form id="step2-form" class="wizard-form">
-                <div class="form-group">
-                    <div class="file-upload-area" id="file-upload-area">
-                        <div class="upload-icon">📁</div>
-                        <p class="upload-text">Drag and drop files here or click to browse</p>
-                        <p class="upload-hint">Supported formats: PDF, TXT, DOCX (Max 50MB per file, up to 10 files)</p>
-                        <input 
-                            type="file" 
-                            id="file-input" 
-                            name="files" 
-                            multiple 
-                            accept=".pdf,.txt,.docx"
-                            style="display: none;"
-                        >
+            <div class="playground-layout">
+                <!-- Left Column: Configuration -->
+                <div class="playground-config">
+                    <div class="config-section">
+                        <h3>Model Selection</h3>
+                        <div class="form-group">
+                            <label for="model-select">LLM Model</label>
+                            <select id="model-select" class="form-control">
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            </select>
+                            <span class="help-text">Select the language model for your chatbot</span>
+                        </div>
                     </div>
-                    <span class="error-message" id="file-error"></span>
-                </div>
 
-                <div id="file-list" class="file-list"></div>
-
-                <div id="upload-progress" class="upload-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
+                    <div class="config-section">
+                        <h3>System Prompt</h3>
+                        <div class="form-group">
+                            <label for="system-prompt-edit">System Prompt <span class="required">*</span></label>
+                            <textarea
+                                id="system-prompt-edit"
+                                rows="8"
+                                class="form-control"
+                                placeholder="System prompt will be auto-generated..."
+                            ></textarea>
+                            <span class="help-text">This prompt defines your chatbot's behavior. You can edit it as needed.</span>
+                            <span class="error-message" id="prompt-edit-error"></span>
+                        </div>
+                        <div class="prompt-actions">
+                            <button type="button" class="btn-secondary" id="regenerate-prompt-btn">Regenerate Prompt</button>
+                            <button type="button" class="btn-primary" id="save-config-btn">Save Changes</button>
+                        </div>
                     </div>
-                    <p class="progress-text" id="progress-text">Uploading files...</p>
+
+                    <div class="config-section">
+                        <h3>Actions</h3>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" id="back-btn">← Back to Data</button>
+                            <button type="button" class="btn-primary" id="deploy-btn" disabled>Next: Deploy</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="processing-status" class="processing-status" style="display: none;">
-                    <div class="status-icon">⚙️</div>
-                    <p class="status-text">Processing documents and generating embeddings...</p>
-                    <div class="spinner"></div>
+                <!-- Right Column: Chat Test -->
+                <div class="playground-chat">
+                    <h3>Test Your Chatbot</h3>
+                    <p class="help-text">Try asking questions to see how your chatbot responds with the current settings</p>
+                    
+                    <div id="test-chat-messages" class="test-chat-messages"></div>
+                    
+                    <form id="test-query-form" class="test-query-form">
+                        <div class="query-input-group">
+                            <input
+                                type="text"
+                                id="test-query-input"
+                                placeholder="Ask a question to test your chatbot..."
+                                class="form-control"
+                            >
+                            <button type="submit" class="btn-primary" id="send-btn">Send</button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="back-btn">Back</button>
-                    <button type="submit" class="btn-primary" id="next-btn" disabled>Next: Preview & Test</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

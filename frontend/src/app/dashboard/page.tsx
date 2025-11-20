@@ -125,20 +125,20 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen mesh-bg">
       <Navbar />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-display text-5xl tracking-tight mb-2">Dashboard</h1>
+            <p className="text-foreground/70 text-lg font-medium">
               Manage your AI chatbots
             </p>
           </div>
           <Link href="/create">
-            <Button size="lg">
+            <Button size="lg" className="btn-primary font-bold shadow-xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105">
               <PlusCircle className="mr-2 h-5 w-5" />
               Create Chatbot
             </Button>
@@ -146,14 +146,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="mb-8">
+          <div className="relative max-w-xl">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search chatbots..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-12 h-14 text-base border-2 focus:border-primary/40 transition-all"
             />
           </div>
         </div>
@@ -175,23 +175,26 @@ export default function DashboardPage() {
 
         {/* Empty State */}
         {!loading && filteredChatbots.length === 0 && (
-          <Card className="text-center py-12">
+          <Card className="card-elevated text-center py-16 border-2">
             <CardContent>
-              <Bot className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">
+              <div className="relative inline-block mb-6">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                <Bot className="h-20 w-20 mx-auto text-primary relative" strokeWidth={2} />
+              </div>
+              <h3 className="text-heading text-2xl mb-3">
                 {searchQuery
                   ? "No chatbots found"
                   : "No chatbots yet"}
               </h3>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-foreground/70 mb-8 text-lg">
                 {searchQuery
                   ? "Try adjusting your search query"
                   : "Get started by creating your first chatbot"}
               </p>
               {!searchQuery && (
                 <Link href="/create">
-                  <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
+                  <Button size="lg" className="btn-primary font-bold shadow-xl shadow-primary/30">
+                    <PlusCircle className="mr-2 h-5 w-5" />
                     Create Your First Chatbot
                   </Button>
                 </Link>
@@ -203,42 +206,45 @@ export default function DashboardPage() {
         {/* Chatbots Grid */}
         {!loading && filteredChatbots.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredChatbots.map((chatbot) => (
-              <Card key={chatbot.id} className="flex flex-col">
+            {filteredChatbots.map((chatbot, idx) => (
+              <Card key={chatbot.id} className={`card-elevated hover-lift flex flex-col border-2 fade-in-up stagger-${Math.min(idx + 1, 5)}`}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Bot className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">{chatbot.name}</CardTitle>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-primary/20 blur-md rounded-full" />
+                        <Bot className="h-6 w-6 text-primary relative" strokeWidth={2.5} />
+                      </div>
+                      <CardTitle className="text-heading text-xl">{chatbot.name}</CardTitle>
                     </div>
                     {getStatusBadge(chatbot.status)}
                   </div>
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-2 text-base">
                     {chatbot.system_prompt}
                   </CardDescription>
                 </CardHeader>
 
                 <CardContent className="flex-1">
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
+                  <div className="space-y-3 text-sm text-foreground/70 font-medium">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-primary" />
                       <span>
                         {chatbot.document_count || 0} document
                         {chatbot.document_count !== 1 ? "s" : ""}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-accent" />
                       <span>Created {formatDate(chatbot.created_at)}</span>
                     </div>
                   </div>
                 </CardContent>
 
-                <CardFooter className="flex gap-2">
+                <CardFooter className="flex gap-2 pt-4">
                   <Link href={`/chat/${chatbot.id}`} className="flex-1">
                     <Button
                       variant="default"
-                      className="w-full"
+                      className="w-full font-bold"
                       disabled={chatbot.status !== "ready"}
                     >
                       <MessageSquare className="mr-2 h-4 w-4" />
@@ -251,6 +257,7 @@ export default function DashboardPage() {
                       <Button
                         variant="outline"
                         size="icon"
+                        className="border-2"
                         disabled={deletingId === chatbot.id}
                       >
                         {deletingId === chatbot.id ? (
@@ -260,20 +267,20 @@ export default function DashboardPage() {
                         )}
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="card-elevated border-2">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Chatbot?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-heading text-2xl">Delete Chatbot?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-base">
                           This will permanently delete &quot;{chatbot.name}&quot; and all
                           its documents and chat history. This action cannot be
                           undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="font-semibold">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(chatbot.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold"
                         >
                           Delete
                         </AlertDialogAction>

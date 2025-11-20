@@ -5,6 +5,7 @@ Document Service for handling file uploads, text extraction, and embedding gener
 import os
 import uuid
 import logging
+import shutil
 from typing import List, Dict, Any
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -257,6 +258,80 @@ class DocumentService:
         }
 
         return result
+
+    def reset_chatbot_documents(self, chatbot_id: str) -> None:
+        """
+        Remove all stored documents, uploads, and vector store data for a chatbot.
+
+        Args:
+            chatbot_id: Unique identifier for the chatbot
+
+        Raises:
+            ValueError: If chatbot_id is invalid
+            Exception: If database operations fail
+        """
+        if not chatbot_id or not isinstance(chatbot_id, str) or not chatbot_id.strip():
+            raise ValueError("Chatbot ID is required to reset documents")
+
+        chatbot_id = chatbot_id.strip()
+
+        try:
+            # Collect existing document file paths
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT file_path FROM documents WHERE chatbot_id = ?
+                """, (chatbot_id,))
+                file_rows = cursor.fetchall()
+        except Exception as e:
+            logger.error("Failed to load existing documents for chatbot '%s': %s", chatbot_id, str(e))
+            raise
+
+        file_paths = [row['file_path'] for row in file_rows]
+
+        # Delete individual files
+        for file_path in file_paths:
+            try:
+                if file_path and os.path.exists(file_path):
+                    os.remove(file_path)
+                    logger.debug("Deleted document file during reset: %s", file_path)
+            except Exception as e:
+                logger.warning("Unable to delete file '%s' while resetting chatbot '%s': %s", file_path, chatbot_id, str(e))
+
+        # Remove upload directory entirely to avoid stale files
+        chatbot_folder = os.path.join(self.upload_folder, chatbot_id)
+        if os.path.exists(chatbot_folder):
+            try:
+                shutil.rmtree(chatbot_folder)
+                logger.debug("Removed upload directory '%s' during reset", chatbot_folder)
+            except Exception as e:
+                logger.warning(
+                    "Failed to delete upload directory '%s' for chatbot '%s': %s",
+                    chatbot_folder,
+                    chatbot_id,
+                    str(e)
+                )
+        # Re-create clean directory for future files
+        os.makedirs(chatbot_folder, exist_ok=True)
+
+        # Delete document records
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM documents WHERE chatbot_id = ?", (chatbot_id,))
+        except Exception as e:
+            logger.error("Failed to clear document records for chatbot '%s': %s", chatbot_id, str(e))
+            raise
+
+        # Delete vector store so new embeddings don't mix with old ones
+        try:
+            self.vector_store_manager.delete_store(chatbot_id)
+        except FileNotFoundError:
+            logger.debug("Vector store for chatbot '%s' not found during reset; skipping", chatbot_id)
+        except Exception as e:
+            logger.warning("Failed to delete vector store for chatbot '%s': %s", chatbot_id, str(e))
+
+        logger.info("Reset documents and vector store for chatbot '%s'", chatbot_id)
 
     def extract_text(self, file_path: str, file_type: str) -> str:
         """

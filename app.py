@@ -94,6 +94,7 @@ def create_app():
     os.makedirs(flask_app.config["UPLOAD_FOLDER"], exist_ok=True)
     os.makedirs(flask_app.config["VECTOR_STORE_PATH"], exist_ok=True)
     os.makedirs("./data", exist_ok=True)
+    os.makedirs("./data/drafts", exist_ok=True)
 
     # Initialize services on startup
     try:

@@ -396,34 +396,34 @@ export default function CreateChatbotPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen mesh-bg">
       <Navbar />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="max-w-3xl mx-auto mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-6">
+        <div className="max-w-4xl mx-auto mb-12">
+          <h1 className="text-display text-5xl tracking-tight mb-8 text-center">
             Create New Chatbot
           </h1>
           
           {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="flex items-center justify-center gap-4 mb-8">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                  className={`flex items-center justify-center w-14 h-14 rounded-2xl border-2 transition-all font-display font-bold text-lg ${
                     step === currentStep
-                      ? "bg-primary text-primary-foreground border-primary"
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30 scale-110"
                       : step < currentStep
-                      ? "bg-primary/10 text-primary border-primary"
+                      ? "bg-primary/10 text-primary border-primary/40"
                       : "bg-muted text-muted-foreground border-muted-foreground/25"
                   }`}
                 >
-                  <span className="text-sm font-semibold">{step}</span>
+                  {step}
                 </div>
                 {step < 3 && (
                   <div
-                    className={`w-16 h-0.5 mx-2 transition-all ${
+                    className={`w-20 h-1 mx-2 rounded-full transition-all ${
                       step < currentStep ? "bg-primary" : "bg-muted-foreground/25"
                     }`}
                   />
@@ -432,64 +432,72 @@ export default function CreateChatbotPage() {
             ))}
           </div>
           
-          <p className="text-center text-muted-foreground">
-            {stepTitles[currentStep]} - Step {currentStep} of 3
+          <p className="text-center text-foreground/70 text-lg font-semibold">
+            {stepTitles[currentStep]} — Step {currentStep} of 3
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <Alert variant="destructive" className="max-w-3xl mx-auto mb-6">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="max-w-4xl mx-auto mb-8 border-2">
+            <AlertDescription className="font-medium">{error}</AlertDescription>
           </Alert>
         )}
 
         {/* Wizard Content */}
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Step 1: Data */}
           {currentStep === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
+            <Card className="card-elevated border-2 page-enter">
+              <CardHeader className="pb-8">
+                <CardTitle className="flex items-center gap-3 text-heading text-2xl">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-md rounded-full" />
+                    <FileText className="h-7 w-7 text-primary relative" strokeWidth={2.5} />
+                  </div>
                   Step 1: Data
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-base mt-2">
                   Set your chatbot&apos;s name, upload training documents, and provide special instructions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Chatbot Name *</Label>
+              <CardContent className="space-y-8">
+                <div className="space-y-3">
+                  <Label htmlFor="name" className="text-base font-semibold">Chatbot Name *</Label>
                   <Input
                     id="name"
                     placeholder="e.g., Customer Support Bot"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    className="h-12 text-base border-2 focus:border-primary/40"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="instructions">Special Instructions (Optional)</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="instructions" className="text-base font-semibold">Special Instructions (Optional)</Label>
                   <Textarea
                     id="instructions"
                     placeholder="e.g., Focus on customer support, be professional and concise, use friendly tone..."
                     value={specialInstructions}
                     onChange={(e) => setSpecialInstructions(e.target.value)}
                     rows={4}
+                    className="text-base border-2 focus:border-primary/40 resize-none"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-foreground/60 font-medium">
                     Provide any specific instructions for your chatbot&apos;s behavior (we&apos;ll generate an optimized system prompt for you)
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Upload Training Documents *</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Upload Training Documents *</Label>
+                  <div className="border-2 border-dashed border-primary/30 rounded-2xl p-10 text-center bg-primary/5 hover:bg-primary/10 transition-all">
+                    <div className="relative inline-block mb-4">
+                      <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                      <FileText className="h-16 w-16 mx-auto text-primary relative" strokeWidth={2} />
+                    </div>
                     <Label
                       htmlFor="file-upload"
-                      className="cursor-pointer text-primary hover:underline"
+                      className="cursor-pointer text-primary hover:text-primary/80 text-lg font-semibold block mb-2 transition-colors"
                     >
                       Click to upload files or drag and drop
                     </Label>
@@ -501,33 +509,34 @@ export default function CreateChatbotPage() {
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-foreground/60 font-medium">
                       Supports PDF, DOCX, and TXT files (Max 50MB per file, up to 10 files)
                     </p>
                   </div>
                 </div>
 
                 {uploadedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Uploaded Files ({uploadedFiles.length})</Label>
-                    <div className="space-y-2">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Uploaded Files ({uploadedFiles.length})</Label>
+                    <div className="space-y-3">
                       {uploadedFiles.map((file) => (
                         <div
                           key={file.id}
-                          className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                          className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border/50 hover:border-primary/30 transition-all"
                         >
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{file.filename}</span>
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-primary" strokeWidth={2} />
+                            <span className="text-sm font-semibold">{file.filename}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-foreground/60 font-medium">
                               {(file.file_size / 1024).toFixed(1)} KB
                             </span>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteFile(file.id)}
+                              className="hover:bg-destructive/10 hover:text-destructive"
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -539,45 +548,46 @@ export default function CreateChatbotPage() {
                 )}
 
                 {uploading && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex items-center gap-3 text-base text-foreground/70 font-medium">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     Uploading files...
                   </div>
                 )}
 
                 {/* Processing Indicator */}
                 {processingToPlayground && currentStep === 1 && (
-                  <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="border-2 border-primary/30 rounded-2xl p-6 bg-gradient-to-r from-primary/5 to-accent/5 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" strokeWidth={2.5} />
                       <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">Processing Documents</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-base font-bold text-primary">Processing Documents</p>
+                        <p className="text-sm text-foreground/70 font-medium">
                           {processingMessage || "Preparing your chatbot..."}
                         </p>
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary animate-pulse transition-all duration-300" style={{ width: "60%" }} />
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-primary to-accent animate-pulse transition-all duration-300" style={{ width: "60%" }} />
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-end gap-4 pt-4">
+                <div className="flex justify-end gap-4 pt-6">
                   <Button
                     size="lg"
                     onClick={handleContinueToPlayground}
                     disabled={!name.trim() || uploadedFiles.length === 0 || uploading || processingToPlayground}
+                    className="btn-primary font-bold px-8 py-6 text-base shadow-lg shadow-primary/30"
                   >
                     {processingToPlayground ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         Processing...
                       </>
                     ) : (
                       <>
                         Next: Playground
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <ArrowRight className="ml-2 h-5 w-5" />
                       </>
                     )}
                   </Button>
@@ -588,25 +598,28 @@ export default function CreateChatbotPage() {
 
           {/* Step 2: Playground */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-primary" />
+            <div className="space-y-6 page-enter">
+              <Card className="card-elevated border-2">
+                <CardHeader className="pb-8">
+                  <CardTitle className="flex items-center gap-3 text-heading text-2xl">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-secondary/20 blur-md rounded-full" />
+                      <Settings className="h-7 w-7 text-secondary relative" strokeWidth={2.5} />
+                    </div>
                     Step 2: Playground
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-base mt-2">
                     Configure your chatbot&apos;s model and system prompt, then test it before deploying
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="model">LLM Model</Label>
+                <CardContent className="space-y-8">
+                  <div className="space-y-3">
+                    <Label htmlFor="model" className="text-base font-semibold">LLM Model</Label>
                     <select
                       id="model"
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      className="flex h-12 w-full rounded-xl border-2 border-input bg-background px-4 py-2 text-base ring-offset-background focus:border-primary/40 focus:outline-none font-medium"
                     >
                       <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                       <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
@@ -614,14 +627,15 @@ export default function CreateChatbotPage() {
                     </select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="prompt">System Prompt *</Label>
+                      <Label htmlFor="prompt" className="text-base font-semibold">System Prompt *</Label>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={generateSystemPrompt}
                         disabled={generatingPrompt}
+                        className="font-semibold border-2"
                       >
                         {generatingPrompt ? (
                           <>
@@ -642,21 +656,25 @@ export default function CreateChatbotPage() {
                       value={systemPrompt}
                       onChange={(e) => setSystemPrompt(e.target.value)}
                       rows={8}
+                      className="text-base border-2 focus:border-primary/40 resize-none font-mono"
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-foreground/60 font-medium">
                       This prompt defines your chatbot&apos;s behavior. You can edit it as needed.
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="flex flex-col" style={{ height: "600px" }}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-primary" />
+              <Card className="card-elevated border-2 flex flex-col" style={{ height: "600px" }}>
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3 text-heading text-2xl">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-accent/20 blur-md rounded-full" />
+                      <MessageSquare className="h-7 w-7 text-accent relative" strokeWidth={2.5} />
+                    </div>
                     Test Your Chatbot
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-base mt-2">
                     Try asking questions to see how your chatbot responds with the current settings
                   </CardDescription>
                 </CardHeader>
@@ -755,7 +773,7 @@ export default function CreateChatbotPage() {
               </Card>
 
               <div className="flex justify-between gap-4">
-                <Button variant="outline" onClick={handleBack}>
+                <Button variant="outline" onClick={handleBack} size="lg" className="font-semibold border-2 px-8">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Data
                 </Button>
@@ -763,9 +781,10 @@ export default function CreateChatbotPage() {
                   size="lg"
                   onClick={handleContinueToDeploy}
                   disabled={!systemPrompt.trim()}
+                  className="btn-primary font-bold px-8 py-6 text-base shadow-lg shadow-primary/30"
                 >
                   Next: Deploy
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -773,22 +792,25 @@ export default function CreateChatbotPage() {
 
           {/* Step 3: Deploy */}
           {currentStep === 3 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Rocket className="h-5 w-5 text-primary" />
+            <Card className="card-elevated border-2 page-enter">
+              <CardHeader className="pb-8">
+                <CardTitle className="flex items-center gap-3 text-heading text-2xl">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-secondary/20 blur-md rounded-full" />
+                    <Rocket className="h-7 w-7 text-secondary relative" strokeWidth={2.5} />
+                  </div>
                   Step 3: Deploy
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-base mt-2">
                   Deploy your chatbot and get the URL to share with others
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-8">
                 {!deployedChatbot ? (
                   <>
                     <div className="space-y-4">
-                      <h3 className="font-semibold">Deployment Summary</h3>
-                      <div className="space-y-2 p-4 bg-muted rounded-lg">
+                      <h3 className="text-heading text-xl">Deployment Summary</h3>
+                      <div className="space-y-3 p-6 bg-muted/50 rounded-xl border border-border/50">
                         <div>
                           <span className="text-sm font-medium">Chatbot Name:</span>
                           <p className="text-sm text-muted-foreground">{name}</p>
@@ -806,8 +828,8 @@ export default function CreateChatbotPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-between gap-4 pt-4">
-                      <Button variant="outline" onClick={handleBack}>
+                    <div className="flex justify-between gap-4 pt-6">
+                      <Button variant="outline" onClick={handleBack} size="lg" className="font-semibold border-2 px-8">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Playground
                       </Button>
@@ -815,15 +837,16 @@ export default function CreateChatbotPage() {
                         size="lg"
                         onClick={handleDeploy}
                         disabled={deploying}
+                        className="btn-primary font-bold px-8 py-6 text-base shadow-xl shadow-secondary/40"
                       >
                         {deploying ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             Deploying...
                           </>
                         ) : (
                           <>
-                            <Rocket className="mr-2 h-4 w-4" />
+                            <Rocket className="mr-2 h-5 w-5" />
                             Deploy Chatbot
                           </>
                         )}
@@ -833,18 +856,19 @@ export default function CreateChatbotPage() {
                 ) : (
                   <>
                     <div className="text-center">
-                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                        <Check className="h-8 w-8 text-primary" />
+                      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 relative">
+                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                        <Check className="h-10 w-10 text-primary relative" strokeWidth={3} />
                       </div>
-                      <CardTitle className="text-2xl mb-2">
+                      <CardTitle className="text-heading text-3xl mb-3">
                         Your Chatbot is Ready!
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-base">
                         Your chatbot has been successfully deployed and is ready to use
                       </CardDescription>
                     </div>
 
-                    <div className="space-y-4 p-4 bg-muted rounded-lg">
+                    <div className="space-y-4 p-6 bg-muted/50 rounded-xl border border-border/50">
                       <div>
                         <span className="text-sm font-medium">Name:</span>
                         <p className="text-sm text-muted-foreground">{deployedChatbot.name}</p>
@@ -861,12 +885,13 @@ export default function CreateChatbotPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Chatbot URL</Label>
-                      <div className="flex gap-2">
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold">Chatbot URL</Label>
+                      <div className="flex gap-3">
                         <Input
                           value={`${typeof window !== "undefined" ? window.location.origin : ""}/chat/${deployedChatbot.id}`}
                           readOnly
+                          className="h-12 text-base border-2 font-mono"
                         />
                         <Button
                           variant="outline"
@@ -874,25 +899,26 @@ export default function CreateChatbotPage() {
                             const url = `${window.location.origin}/chat/${deployedChatbot.id}`;
                             navigator.clipboard.writeText(url);
                           }}
+                          className="font-semibold border-2 px-6"
                         >
                           Copy
                         </Button>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-4 pt-4">
+                    <div className="flex flex-col gap-4 pt-6">
                       <Button
                         size="lg"
                         onClick={() => router.push(`/chat/${deployedChatbot.id}`)}
-                        className="w-full"
+                        className="w-full btn-primary font-bold py-6 text-base shadow-xl shadow-primary/30"
                       >
-                        <MessageSquare className="mr-2 h-4 w-4" />
+                        <MessageSquare className="mr-2 h-5 w-5" />
                         Open Chatbot
                       </Button>
                       <Button
                         variant="outline"
                         onClick={() => router.push("/dashboard")}
-                        className="w-full"
+                        className="w-full font-semibold border-2 py-6 text-base"
                       >
                         Go to Dashboard
                       </Button>

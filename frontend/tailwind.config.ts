@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
+        display: ["var(--font-bricolage)", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -47,6 +51,11 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      animation: {
+        "fade-in-up": "fadeInUp 0.6s ease-out forwards",
+        "float": "float 6s ease-in-out infinite",
+        "mesh": "mesh-movement 20s ease infinite",
       },
     },
   },
