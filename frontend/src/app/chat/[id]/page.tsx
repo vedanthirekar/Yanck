@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Send, Bot, User, Loader2, FileText, Info } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -39,31 +39,41 @@ export default function ChatPage() {
     inputRef.current?.focus();
   }, []);
 
+  const fetchChatbotData = useCallback(async () => {
+    if (!chatbotId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch chatbot first, then documents
+      const chatbotResponse = await chatbotApi.get(chatbotId);
+      setChatbot(chatbotResponse.chatbot);
+
+      // Try to fetch documents, but don't fail if it errors
+      try {
+        const documentsResponse = await documentApi.list(chatbotId);
+        setDocuments(documentsResponse.documents);
+      } catch (docErr) {
+        console.warn("Failed to load documents:", docErr);
+        // Set empty documents array if fetch fails
+        setDocuments([]);
+      }
+    } catch (err) {
+      console.error("Failed to load chatbot:", err);
+      setError(err instanceof Error ? err.message : "Failed to load chatbot");
+      setChatbot(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [chatbotId]);
+
   // Fetch chatbot and documents
   useEffect(() => {
     if (chatbotId) {
       fetchChatbotData();
     }
-  }, [chatbotId]);
-
-  const fetchChatbotData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [chatbotResponse, documentsResponse] = await Promise.all([
-        chatbotApi.get(chatbotId),
-        documentApi.list(chatbotId),
-      ]);
-
-      setChatbot(chatbotResponse.chatbot);
-      setDocuments(documentsResponse.documents);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load chatbot");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [chatbotId, fetchChatbotData]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +130,9 @@ export default function ChatPage() {
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <Alert variant="destructive">
-            <AlertDescription>Chatbot not found</AlertDescription>
+            <AlertDescription>
+              {error || "Chatbot not found"}
+            </AlertDescription>
           </Alert>
           <Button onClick={() => router.push("/dashboard")} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -180,19 +192,25 @@ export default function ChatPage() {
               <div>
                 <h3 className="font-medium text-sm mb-2">Documents</h3>
                 <div className="space-y-1">
-                  {documents.slice(0, 3).map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center gap-2 text-xs text-muted-foreground"
-                    >
-                      <FileText className="h-3 w-3" />
-                      <span className="truncate">{doc.filename}</span>
-                    </div>
-                  ))}
-                  {documents.length > 3 && (
-                    <p className="text-xs text-muted-foreground">
-                      +{documents.length - 3} more
-                    </p>
+                  {documents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No documents uploaded</p>
+                  ) : (
+                    <>
+                      {documents.slice(0, 3).map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                          <FileText className="h-3 w-3" />
+                          <span className="truncate">{doc.filename}</span>
+                        </div>
+                      ))}
+                      {documents.length > 3 && (
+                        <p className="text-xs text-muted-foreground">
+                          +{documents.length - 3} more
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
