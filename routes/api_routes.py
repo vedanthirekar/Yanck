@@ -992,11 +992,10 @@ def delete_draft_file(draft_id, file_id):
 @api_bp.route('/generate-system-prompt', methods=['POST'])
 def generate_system_prompt():
     """
-    Generate an optimized system prompt based on special instructions and document content.
+    Generate an optimized system prompt based on special instructions.
 
     Request Body (JSON):
         - special_instructions: Optional user instructions for chatbot behavior
-        - draft_id: Optional draft ID to extract content from uploaded documents
 
     Returns:
         JSON response with generated system prompt (200 OK)
@@ -1005,8 +1004,7 @@ def generate_system_prompt():
     Example:
         POST /api/generate-system-prompt
         {
-            "special_instructions": "Focus on customer support, be professional",
-            "draft_id": "optional-draft-id"
+            "special_instructions": "Focus on customer support, be professional"
         }
     """
     try:
@@ -1031,75 +1029,24 @@ def generate_system_prompt():
 
         data = request.get_json()
         special_instructions = data.get('special_instructions', '').strip()
-        draft_id = data.get('draft_id')
-
-        # Extract document content if draft_id is provided
-        document_summary = ""
-        if draft_id:
-            try:
-                import os
-                document_service = current_app.document_service
-                draft_folder = os.path.join('./data/drafts', draft_id)
-
-                if os.path.exists(draft_folder):
-                    # Get sample text from first few documents
-                    files = os.listdir(draft_folder)
-                    sample_texts = []
-                    max_samples = 3
-                    max_chars = 2000  # Limit total characters
-
-                    for filename in files[:max_samples]:
-                        file_path = os.path.join(draft_folder, filename)
-                        if os.path.isfile(file_path):
-                            try:
-                                file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-                                if file_ext in ['pdf', 'txt', 'docx']:
-                                    text = document_service.extract_text(file_path, file_ext)
-                                    if text:
-                                        sample_texts.append(text[:max_chars])
-                                        if sum(len(t) for t in sample_texts) >= max_chars:
-                                            break
-                            except Exception as e:
-                                logger.warning("Could not extract text from %s: %s", filename, str(e))
-                                continue
-
-                    if sample_texts:
-                        document_summary = "\n\n".join(sample_texts)
-                        # Truncate if too long
-                        if len(document_summary) > 3000:
-                            document_summary = document_summary[:3000] + "..."
-            except Exception as e:
-                logger.warning("Could not extract document content: %s", str(e))
 
         # Generate system prompt
-        if special_instructions or document_summary:
+        if special_instructions:
             # Use LLM to generate tailored prompt
-            prompt_parts = []
-            
-            if document_summary:
-                prompt_parts.append(f"""Document Content Summary:
-{document_summary}
-
-""")
-            
-            if special_instructions:
-                prompt_parts.append(f"""User's Special Instructions:
-{special_instructions}
-
-""")
-            
             prompt = f"""You are an expert at creating effective system prompts for RAG (Retrieval-Augmented Generation) chatbots.
 
-Create a comprehensive and effective system prompt based on the following information:
+Create a comprehensive and effective system prompt based on the user's instructions below:
 
-{''.join(prompt_parts)}Your task is to generate an ideal system prompt that:
+User's Special Instructions:
+{special_instructions}
+
+Your task is to generate an ideal system prompt that:
 1. Incorporates the user's special instructions naturally and effectively
-2. If document content is provided, understands the type and context of the documents
-3. Emphasizes providing in-depth, detailed, and specific answers
-4. Instructs the chatbot to answer based on the provided documents/knowledge base
-5. Encourages thoroughness and accuracy in responses
-6. Sets a professional and helpful tone
-7. Includes guidance on how to handle questions (don't cite the sources in the answer, be specific, provide examples when relevant)
+2. Emphasizes providing in-depth, detailed, and specific answers
+3. Instructs the chatbot to answer based on the provided documents/knowledge base
+4. Encourages thoroughness and accuracy in responses
+5. Sets a professional and helpful tone
+6. Includes guidance on how to handle questions (don't cite the sources in the answer, be specific, provide examples when relevant)
 
 The system prompt should be 4-8 sentences long and create a strong foundation for an intelligent, helpful chatbot.
 
